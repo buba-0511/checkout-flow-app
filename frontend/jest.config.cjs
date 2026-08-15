@@ -10,7 +10,14 @@ module.exports = {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '\\.(png|jpg|jpeg|gif|svg)$': '<rootDir>/test/fileMock.cjs',
   },
-  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/main.tsx', '!src/**/*.d.ts'],
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/main.tsx',
+    '!src/**/*.d.ts',
+    '!src/api/types.ts',
+    '!src/store/store.ts',
+    '!src/store/hooks.ts',
+  ],
   coverageThreshold: {
     global: {
       branches: 80,
