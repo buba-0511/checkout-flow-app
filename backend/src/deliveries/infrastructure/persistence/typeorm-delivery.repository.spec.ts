@@ -1,4 +1,5 @@
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
+import { TypeOrmTransactionContext } from '../../../common/typeorm-transaction-manager';
 import { Delivery } from '../../domain/delivery.entity';
 import { DeliveryMapper } from './delivery.mapper';
 import { DeliveryOrmEntity } from './delivery.orm-entity';
@@ -65,6 +66,28 @@ describe('TypeOrmDeliveryRepository', () => {
       await repository.save(delivery);
 
       expect(ormRepo.save).toHaveBeenCalledWith(DeliveryMapper.toOrm(delivery));
+    });
+
+    it('saves through the transactional EntityManager when a ctx is passed', async () => {
+      const { ormRepo, repository } = setup();
+      const delivery = new Delivery(
+        'd1',
+        'c1',
+        'Calle 123 #45-67',
+        'Bogotá',
+        'Cundinamarca',
+      );
+      const txRepo = { save: jest.fn() };
+      const manager = {
+        getRepository: jest.fn().mockReturnValue(txRepo),
+      } as unknown as EntityManager;
+      const ctx = new TypeOrmTransactionContext(manager);
+
+      await repository.save(delivery, ctx);
+
+      expect(manager.getRepository).toHaveBeenCalledWith(DeliveryOrmEntity);
+      expect(txRepo.save).toHaveBeenCalledWith(DeliveryMapper.toOrm(delivery));
+      expect(ormRepo.save).not.toHaveBeenCalled();
     });
   });
 });

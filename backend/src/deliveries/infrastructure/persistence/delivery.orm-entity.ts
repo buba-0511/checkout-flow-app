@@ -4,10 +4,12 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryColumn,
   RelationId,
 } from 'typeorm';
 import { CustomerOrmEntity } from '../../../customers/infrastructure/persistence/customer.orm-entity';
+import { TransactionOrmEntity } from '../../../transactions/infrastructure/persistence/transaction.orm-entity';
 
 @Entity('deliveries')
 export class DeliveryOrmEntity {
@@ -32,4 +34,7 @@ export class DeliveryOrmEntity {
 
   @Column()
   region: string;
+
+  @OneToMany(() => TransactionOrmEntity, (transaction) => transaction.delivery)
+  transactions?: TransactionOrmEntity[];
 }

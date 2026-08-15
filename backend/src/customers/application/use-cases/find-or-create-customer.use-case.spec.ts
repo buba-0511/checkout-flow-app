@@ -1,5 +1,6 @@
 import { Customer, LegalIdType } from '../../domain/customer.entity';
 import type { CustomerRepository } from '../../domain/customer.repository';
+import type { TransactionContext } from '../../../common/transaction-manager';
 import { FindOrCreateCustomerUseCase } from './find-or-create-customer.use-case';
 
 function createMockRepository(): jest.Mocked<CustomerRepository> {
@@ -71,6 +72,17 @@ describe('FindOrCreateCustomerUseCase', () => {
     expect(result.value.fullName).toBe('Jane Doe');
     expect(result.value.legalId).toBe('1234567890');
     expect(result.value.id).toEqual(expect.any(String));
-    expect(repository.save).toHaveBeenCalledWith(result.value);
+    expect(repository.save).toHaveBeenCalledWith(result.value, undefined);
+  });
+
+  it('forwards the transaction context to save when creating a new customer', async () => {
+    const repository = createMockRepository();
+    repository.findByLegalId.mockResolvedValue(null);
+    const ctx = {} as TransactionContext;
+
+    const useCase = new FindOrCreateCustomerUseCase(repository);
+    const result = await useCase.execute(input, ctx);
+
+    expect(repository.save).toHaveBeenCalledWith(result.value, ctx);
   });
 });

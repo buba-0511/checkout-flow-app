@@ -1,4 +1,5 @@
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
+import { TypeOrmTransactionContext } from '../../../common/typeorm-transaction-manager';
 import { Customer, LegalIdType } from '../../domain/customer.entity';
 import { CustomerMapper } from './customer.mapper';
 import { CustomerOrmEntity } from './customer.orm-entity';
@@ -86,6 +87,47 @@ describe('TypeOrmCustomerRepository', () => {
       await repository.save(customer);
 
       expect(ormRepo.save).toHaveBeenCalledWith(CustomerMapper.toOrm(customer));
+    });
+
+    it('saves through the transactional EntityManager when a ctx is passed', async () => {
+      const { ormRepo, repository } = setup();
+      const customer = new Customer(
+        'c1',
+        'Jane Doe',
+        'jane.doe@example.com',
+        '+573001234567',
+        '1234567890',
+        LegalIdType.CC,
+      );
+      const txRepo = { save: jest.fn() };
+      const manager = {
+        getRepository: jest.fn().mockReturnValue(txRepo),
+      } as unknown as EntityManager;
+      const ctx = new TypeOrmTransactionContext(manager);
+
+      await repository.save(customer, ctx);
+
+      expect(manager.getRepository).toHaveBeenCalledWith(CustomerOrmEntity);
+      expect(txRepo.save).toHaveBeenCalledWith(CustomerMapper.toOrm(customer));
+      expect(ormRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findById with ctx', () => {
+    it('reads through the transactional EntityManager when a ctx is passed', async () => {
+      const { ormRepo, repository } = setup();
+      const txRepo = { findOneBy: jest.fn().mockResolvedValue(makeOrmEntity('c1')) };
+      const manager = {
+        getRepository: jest.fn().mockReturnValue(txRepo),
+      } as unknown as EntityManager;
+      const ctx = new TypeOrmTransactionContext(manager);
+
+      const customer = await repository.findById('c1', ctx);
+
+      expect(manager.getRepository).toHaveBeenCalledWith(CustomerOrmEntity);
+      expect(txRepo.findOneBy).toHaveBeenCalledWith({ id: 'c1' });
+      expect(customer?.id).toBe('c1');
+      expect(ormRepo.findOneBy).not.toHaveBeenCalled();
     });
   });
 });

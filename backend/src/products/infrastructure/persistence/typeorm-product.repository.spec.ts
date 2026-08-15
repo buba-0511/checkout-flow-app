@@ -1,4 +1,5 @@
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
+import { TypeOrmTransactionContext } from '../../../common/typeorm-transaction-manager';
 import { Product } from '../../domain/product.entity';
 import { ProductMapper } from './product.mapper';
 import { ProductOrmEntity } from './product.orm-entity';
@@ -152,6 +153,26 @@ describe('TypeOrmProductRepository', () => {
       expect(ormRepo.save).toHaveBeenCalledWith(
         products.map((p) => ProductMapper.toOrm(p)),
       );
+    });
+
+    it('saves through the transactional EntityManager when a ctx is passed', async () => {
+      const { ormRepo, repository } = setup();
+      const products = [
+        new Product('p1', 'Widget', 'A widget.', 1000, 10, 'http://x/1.jpg'),
+      ];
+      const txRepo = { save: jest.fn() };
+      const manager = {
+        getRepository: jest.fn().mockReturnValue(txRepo),
+      } as unknown as EntityManager;
+      const ctx = new TypeOrmTransactionContext(manager);
+
+      await repository.saveMany(products, ctx);
+
+      expect(manager.getRepository).toHaveBeenCalledWith(ProductOrmEntity);
+      expect(txRepo.save).toHaveBeenCalledWith(
+        products.map((p) => ProductMapper.toOrm(p)),
+      );
+      expect(ormRepo.save).not.toHaveBeenCalled();
     });
   });
 });

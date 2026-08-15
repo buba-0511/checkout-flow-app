@@ -5,6 +5,8 @@ import { TerminusModule } from '@nestjs/terminus';
 import { ProductsModule } from './products/products.module';
 import { CustomersModule } from './customers/customers.module';
 import { DeliveriesModule } from './deliveries/deliveries.module';
+import { CommonModule } from './common/common.module';
+import { TransactionsModule } from './transactions/transactions.module';
 
 @Module({
   imports: [
@@ -15,9 +17,11 @@ import { DeliveriesModule } from './deliveries/deliveries.module';
       synchronize: process.env.NODE_ENV !== 'production',
     }),
     TerminusModule,
+    CommonModule,
     ProductsModule,
     CustomersModule,
     DeliveriesModule,
+    TransactionsModule,
   ],
   controllers: [AppController],
 })

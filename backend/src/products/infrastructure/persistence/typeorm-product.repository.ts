@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, MoreThan, Repository } from 'typeorm';
+import { TransactionContext } from '../../../common/transaction-manager';
+import { TypeOrmTransactionContext } from '../../../common/typeorm-transaction-manager';
 import { Product } from '../../domain/product.entity';
 import {
   FindPageParams,
@@ -36,13 +38,18 @@ export class TypeOrmProductRepository implements ProductRepository {
     return entities.map((entity) => ProductMapper.toDomain(entity));
   }
 
-  async save(product: Product): Promise<void> {
-    await this.repo.save(ProductMapper.toOrm(product));
+  async save(product: Product, ctx?: TransactionContext): Promise<void> {
+    const repo = this.repoFor(ctx);
+    await repo.save(ProductMapper.toOrm(product));
   }
 
-  async saveMany(products: Product[]): Promise<void> {
-    await this.repo.save(
-      products.map((product) => ProductMapper.toOrm(product)),
-    );
+  async saveMany(products: Product[], ctx?: TransactionContext): Promise<void> {
+    const repo = this.repoFor(ctx);
+    await repo.save(products.map((product) => ProductMapper.toOrm(product)));
+  }
+
+  private repoFor(ctx?: TransactionContext): Repository<ProductOrmEntity> {
+    const manager = TypeOrmTransactionContext.managerOf(ctx);
+    return manager ? manager.getRepository(ProductOrmEntity) : this.repo;
   }
 }

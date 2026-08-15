@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Result } from '../../../common/result';
 import { DomainError } from '../../../common/errors/domain-error';
 import { ErrorCode } from '../../../common/errors/error-code';
+import { TransactionContext } from '../../../common/transaction-manager';
 import { Product } from '../../domain/product.entity';
 import {
   PRODUCT_REPOSITORY,
@@ -13,14 +14,6 @@ export interface DecreaseStockItem {
   quantity: number;
 }
 
-// Decrements stock for every item in a transaction's cart atomically: if any
-// single item fails validation (missing product, insufficient stock), no
-// product's stock is touched at all — the whole batch fails together.
-//
-// The Result chain below is synchronous by design (see common/result.ts),
-// so the two I/O steps (fetching, persisting) sit outside it: fetch once up
-// front, run the pure validate -> apply chain in memory, persist once at
-// the end only if the whole chain succeeded.
 @Injectable()
 export class DecreaseStockUseCase {
   constructor(
@@ -30,7 +23,8 @@ export class DecreaseStockUseCase {
 
   async execute(
     items: DecreaseStockItem[],
-  ): Promise<Result<void, DomainError>> {
+    ctx?: TransactionContext,
+  ): Promise<Result<Product[], DomainError>> {
     const productIds = items.map((item) => item.productId);
     const foundProducts = await this.productRepository.findByIds(productIds);
 
@@ -42,8 +36,8 @@ export class DecreaseStockUseCase {
       return Result.err(result.error);
     }
 
-    await this.productRepository.saveMany(result.value);
-    return Result.ok(undefined);
+    await this.productRepository.saveMany(result.value, ctx);
+    return Result.ok(result.value);
   }
 
   private validateAllExist(

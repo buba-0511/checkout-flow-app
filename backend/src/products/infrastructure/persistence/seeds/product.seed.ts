@@ -48,7 +48,11 @@ async function seed() {
   const dataSource = new DataSource({
     type: 'postgres',
     url: process.env.DATABASE_URL,
-    entities: [ProductOrmEntity],
+    // Glob, not [ProductOrmEntity] — ProductOrmEntity now has a @OneToMany
+    // back to TransactionItemOrmEntity, and TypeORM needs every entity on
+    // both sides of a relation registered on the same DataSource to build
+    // its metadata, even in this standalone script.
+    entities: [__dirname + '/../../../../**/*.orm-entity{.ts,.js}'],
   });
 
   await dataSource.initialize();
