@@ -170,7 +170,7 @@ cp .env.example .env   # fill in your payment gateway sandbox keys
 
 - Frontend: https://localhost:5173
 - Backend: https://localhost:3000
-- MinIO console: http://localhost:9001 (not served over HTTPS, dev-only tooling)
+- MinIO console: http://localhost:9003 (not served over HTTPS, dev-only tooling)
 
 This runs the topology in [Local development topology](#local-development-topology) above — frontend, backend, Postgres, and MinIO all as containers, with source bind-mounted for hot reload on both frontend and backend. Certs live in `certs/` (gitignored, regenerated per machine by `run.sh`).
 

@@ -32,4 +32,13 @@ export default tseslint.config(
       "prettier/prettier": ["error", { endOfLine: "auto" }],
     },
   },
+  {
+    // jest.Mocked<SomeClass> mocks (e.g. `useCase.execute.mockResolvedValue(...)`)
+    // access class methods as bare properties by design — that's not a real
+    // unbound-`this` risk here, just how Jest's mock API works.
+    files: ['**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+    },
+  },
 );

@@ -50,7 +50,10 @@ services:
   postgres:
     image: postgres:16-alpine
     ports:
-      - "5432:5432"
+      # host 5433 -> avoids clashing with a native Postgres on 5432; the
+      # backend still talks to this over the internal Docker network as
+      # postgres:5432 (see DATABASE_URL below), unaffected by this mapping.
+      - "5433:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -66,8 +69,11 @@ services:
   minio:
     image: minio/minio:latest
     ports:
-      - "9000:9000" # S3 API
-      - "9001:9001" # console
+      # host 9002/9003 -> avoid clashing with another local stack already
+      # bound to 9000/9001. Internal port stays 9000, so S3_ENDPOINT above
+      # (minio:9000, over the Docker network) is unaffected.
+      - "9002:9000" # S3 API
+      - "9003:9001" # console
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
