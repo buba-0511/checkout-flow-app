@@ -1,10 +1,7 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryColumn } from 'typeorm';
 import { LegalIdType } from '../../domain/customer.entity';
+import { DeliveryOrmEntity } from '../../../deliveries/infrastructure/persistence/delivery.orm-entity';
 
-// TypeORM's view of a customer. Only this file and customer.mapper.ts know
-// this shape exists. Uses PrimaryColumn (not PrimaryGeneratedColumn) — the
-// application layer generates the id (see FindOrCreateCustomerUseCase),
-// not the database, so identity is decided before persistence is involved.
 @Entity('customers')
 export class CustomerOrmEntity {
   @PrimaryColumn('uuid')
@@ -24,4 +21,7 @@ export class CustomerOrmEntity {
 
   @Column({ name: 'legal_id_type', type: 'enum', enum: LegalIdType })
   legalIdType: LegalIdType;
+
+  @OneToMany(() => DeliveryOrmEntity, (delivery) => delivery.customer)
+  deliveries: DeliveryOrmEntity[];
 }

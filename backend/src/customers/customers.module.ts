@@ -15,8 +15,6 @@ import { GetCustomerByIdUseCase } from './application/use-cases/get-customer-by-
     GetCustomerByIdUseCase,
     { provide: CUSTOMER_REPOSITORY, useClass: TypeOrmCustomerRepository },
   ],
-  // TransactionsModule will need this to resolve/create the customer
-  // placing an order.
-  exports: [FindOrCreateCustomerUseCase],
+  exports: [FindOrCreateCustomerUseCase, GetCustomerByIdUseCase],
 })
 export class CustomersModule {}

@@ -24,10 +24,10 @@ The app follows a 5-step checkout flow:
 1. **Product catalog** — browse available products and stock.
 2. **Card & delivery info** — enter (fake, but structurally valid) credit card data and delivery details.
 3. **Summary** — review product subtotal, base fee and delivery fee before confirming.
-4. **Payment result** — transaction is created as `PENDING`, sent to the payment gateway, and the outcome is shown once resolved.
+4. **Payment result** — transaction is created as `PENDING`, sent to the payment gateway, and the outcome is shown once resolved via a webhook the gateway calls back with the final status.
 5. **Back to catalog** — redirect to the product catalog with stock already updated.
 
-The cart supports multiple products and quantities in a single transaction (not a single-item checkout).
+The cart supports multiple products and quantities in a single transaction (not a single-item checkout). There are two entry points into checkout — **buy now** from a product page (one SKU, one or more units) and the **cart** (multiple products, added while continuing to browse) — both produce the same `POST /transactions` request shape (`items: [{ productId, quantity }]`); `TRANSACTION.source` records which entry point was used for informational purposes only, it never changes backend logic.
 
 ## Tech stack
 
@@ -63,7 +63,7 @@ Each app is independent (own `package.json`/lockfile). GitHub Actions triggers p
 
 ![Local development architecture: frontend, backend, PostgreSQL, and MinIO all running in Docker Compose, with the browser outside the compose network and both the browser and backend reaching out to the payment gateway sandbox API](docs/diagrams/local-dev.svg)
 
-Frontend, backend, PostgreSQL, and MinIO (a local S3-compatible store standing in for the product-images bucket) all run as containers in Docker Compose — only the browser itself isn't containerized. The only two calls that leave the machine are card tokenization (browser → payment gateway, public key) and transaction creation/polling (API → payment gateway, private key) — no card data is ever persisted locally.
+Frontend, backend, PostgreSQL, and MinIO (a local S3-compatible store standing in for the product-images bucket) all run as containers in Docker Compose — only the browser itself isn't containerized. The only calls that leave the machine are card tokenization (browser → payment gateway, public key), transaction creation (API → payment gateway, private key), and the payment gateway's webhook calling back into the API with the final transaction status — no card data is ever persisted locally.
 
 `TODO`: add the CI/CD diagram and the `docker-compose.yml` once implemented.
 
@@ -119,6 +119,7 @@ erDiagram
         uuid customerId FK
         uuid deliveryId FK
         string status
+        string source
         int subtotalInCents
         int baseFeeInCents
         int deliveryFeeInCents

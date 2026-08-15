@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { TerminusModule } from '@nestjs/terminus';
 import { ProductsModule } from './products/products.module';
 import { CustomersModule } from './customers/customers.module';
+import { DeliveriesModule } from './deliveries/deliveries.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { CustomersModule } from './customers/customers.module';
     TerminusModule,
     ProductsModule,
     CustomersModule,
+    DeliveriesModule,
   ],
   controllers: [AppController],
 })
