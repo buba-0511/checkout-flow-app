@@ -1,12 +1,29 @@
 import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  HealthCheck,
+  HealthCheckService,
+  TypeOrmHealthIndicator,
+} from '@nestjs/terminus';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly health: HealthCheckService,
+    private readonly db: TypeOrmHealthIndicator,
+  ) {}
 
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  @Get('health')
+  @HealthCheck()
+  @ApiOperation({
+    summary: 'Liveness/readiness check — process up and DB reachable.',
+  })
+  @ApiResponse({ status: 200, description: 'Healthy.' })
+  @ApiResponse({
+    status: 503,
+    description: 'Unhealthy — a dependency check failed.',
+  })
+  checkHealth() {
+    return this.health.check([() => this.db.pingCheck('database')]);
   }
 }
