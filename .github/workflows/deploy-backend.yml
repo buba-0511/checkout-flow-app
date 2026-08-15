@@ -1,0 +1,35 @@
+# .github/workflows/deploy-backend.yml
+name: Deploy backend
+
+on:
+  push:
+    branches: [prod]
+    paths: ['backend/**']
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+
+      - name: Build and push image
+        working-directory: backend
+        run: |
+          docker build -t ${{ steps.ecr.outputs.registry }}/checkout-backend:${{ github.sha }} .
+          docker push ${{ steps.ecr.outputs.registry }}/checkout-backend:${{ github.sha }}
+
+      - name: Trigger App Runner deployment
+        run: aws apprunner start-deployment --service-arn ${{ secrets.APP_RUNNER_SERVICE_ARN }}
+
+      - name: OWASP ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: ${{ secrets.BACKEND_URL }}

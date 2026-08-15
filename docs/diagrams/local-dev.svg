@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" role="img" aria-label="Local development topology: inside a boundary labeled your machine, the browser sits outside a nested Docker Compose boundary containing four containers — a Vite dev server, a NestJS API, PostgreSQL, and MinIO acting as a local S3-compatible store. The browser talks to the Vite server for the bundle and HMR, to the NestJS API for REST calls, and directly to MinIO for product images. The NestJS API talks to PostgreSQL for data and to MinIO to seed images. The browser and the API separately reach out across the machine boundary to the external payment gateway sandbox API — the browser for card tokenization with the public key, the API for creating and polling the transaction with the private key.">
+  <style>
+    :root{
+      --surface:#FFFFFF;
+      --surface-2:#E4EAF3;
+      --ink:#1B2430;
+      --muted:#5C6779;
+      --line:#C7D0DE;
+      --accent:#C96A32;
+      --accent-soft:rgba(201,106,50,0.09);
+      --bg:#EEF2F8;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --surface:#1a212b;
+        --surface-2:#202a37;
+        --ink:#eef1f6;
+        --muted:#8e97ab;
+        --line:#2b3542;
+        --accent:#e8935a;
+        --accent-soft:rgba(232,147,90,0.13);
+        --bg:#12161d;
+      }
+    }
+    text{font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace;}
+    .bg{fill:var(--bg);}
+    .box-fill{fill:var(--surface);}
+    .box-stroke{stroke:var(--line);stroke-width:1.5;}
+    .box-title{font-size:12.5px;font-weight:600;fill:var(--ink);}
+    .box-sub{font-size:10px;fill:var(--muted);}
+    .boundary{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:7 6;}
+    .boundary-tight{fill:var(--surface-2);stroke:var(--muted);stroke-width:1.3;stroke-dasharray:3 3;}
+    .boundary-label{font-size:11px;font-weight:600;fill:var(--muted);letter-spacing:1.5px;}
+    .boundary-label-tight{font-size:9.5px;font-weight:600;fill:var(--muted);letter-spacing:1px;}
+    .line{stroke:var(--muted);stroke-width:1.6;fill:none;}
+    .line-accent{stroke:var(--accent);stroke-width:1.6;stroke-dasharray:5 4;fill:none;}
+    .arrow-label{font-size:10px;fill:var(--muted);}
+    .arrow-label-accent{font-size:10px;font-weight:600;fill:var(--accent);}
+    .arrow-head{fill:var(--muted);}
+    .arrow-head-accent{fill:var(--accent);}
+    .ext-fill{fill:var(--accent-soft);}
+    .ext-stroke{stroke:var(--accent);stroke-width:1.8;}
+    .ext-eyebrow{font-size:9.5px;font-weight:700;fill:var(--accent);letter-spacing:1px;}
+  </style>
+
+  <rect class="bg" x="0" y="0" width="1000" height="500"/>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <polygon class="arrow-head" points="0,0 10,5 0,10"/>
+    </marker>
+    <marker id="arrow-accent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <polygon class="arrow-head-accent" points="0,0 10,5 0,10"/>
+    </marker>
+  </defs>
+
+  <!-- outer boundary -->
+  <rect class="boundary" x="30" y="50" width="580" height="410" rx="10"/>
+  <text class="boundary-label" x="50" y="76">YOUR MACHINE</text>
+
+  <!-- browser -->
+  <rect class="box-fill box-stroke" x="60" y="90" width="210" height="85" rx="6"/>
+  <text class="box-title" x="165" y="126" text-anchor="middle">Browser</text>
+  <text class="box-sub" x="165" y="148" text-anchor="middle">not containerized</text>
+
+  <!-- docker compose boundary -->
+  <rect class="boundary-tight" x="60" y="205" width="520" height="235" rx="10"/>
+  <text class="boundary-label-tight" x="74" y="224">DOCKER COMPOSE</text>
+
+  <!-- frontend container -->
+  <rect class="box-fill box-stroke" x="85" y="245" width="225" height="80" rx="6"/>
+  <text class="box-title" x="197" y="278" text-anchor="middle">Vite Dev Server</text>
+  <text class="box-sub" x="197" y="300" text-anchor="middle">:5173 · React SPA · HMR</text>
+
+  <!-- backend container -->
+  <rect class="box-fill box-stroke" x="330" y="245" width="225" height="80" rx="6"/>
+  <text class="box-title" x="443" y="278" text-anchor="middle">NestJS API</text>
+  <text class="box-sub" x="443" y="300" text-anchor="middle">:3000</text>
+
+  <!-- postgres container -->
+  <rect class="box-fill box-stroke" x="85" y="345" width="225" height="80" rx="6"/>
+  <text class="box-title" x="197" y="378" text-anchor="middle">PostgreSQL</text>
+  <text class="box-sub" x="197" y="400" text-anchor="middle">:5432</text>
+
+  <!-- minio container -->
+  <rect class="box-fill box-stroke" x="330" y="345" width="225" height="80" rx="6"/>
+  <text class="box-title" x="443" y="378" text-anchor="middle">MinIO</text>
+  <text class="box-sub" x="443" y="400" text-anchor="middle">S3-compatible · :9000</text>
+
+  <!-- frontend -> browser -->
+  <line class="line" x1="197" y1="243" x2="167" y2="177" marker-end="url(#arrow)"/>
+  <text class="arrow-label" x="212" y="210">serves bundle + HMR</text>
+
+  <!-- browser -> backend -->
+  <line class="line" x1="270" y1="112" x2="352" y2="243" marker-end="url(#arrow)"/>
+  <text class="arrow-label" x="284" y="178">REST /api/* (fetch)</text>
+
+  <!-- browser -> minio -->
+  <line class="line" x1="270" y1="145" x2="328" y2="368" marker-end="url(#arrow)"/>
+  <text class="arrow-label" x="296" y="268">GET product images</text>
+
+  <!-- backend -> postgres -->
+  <line class="line" x1="352" y1="325" x2="290" y2="345" marker-end="url(#arrow)"/>
+  <text class="arrow-label" x="300" y="335">SQL queries</text>
+
+  <!-- backend -> minio -->
+  <line class="line" x1="443" y1="325" x2="443" y2="341" marker-end="url(#arrow)"/>
+  <text class="arrow-label" x="459" y="336">seeds images</text>
+
+  <!-- external payment gateway -->
+  <rect class="ext-fill ext-stroke" x="700" y="190" width="260" height="120" rx="6"/>
+  <text class="ext-eyebrow" x="830" y="212" text-anchor="middle">THIRD-PARTY · SANDBOX</text>
+  <text class="box-title" x="830" y="238" text-anchor="middle">Payment Gateway Sandbox API</text>
+  <text class="box-sub" x="830" y="260" text-anchor="middle">api-sandbox.co.uat.wompi.dev</text>
+
+  <!-- browser -> payment gateway -->
+  <line class="line-accent" x1="270" y1="100" x2="698" y2="222" marker-end="url(#arrow-accent)"/>
+  <text class="arrow-label-accent" x="420" y="140">① tokenize card · public key</text>
+
+  <!-- backend -> payment gateway -->
+  <line class="line-accent" x1="555" y1="270" x2="698" y2="255" marker-end="url(#arrow-accent)"/>
+  <text class="arrow-label-accent" x="600" y="295">② create txn + poll · private key</text>
+</svg>
