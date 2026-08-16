@@ -1,5 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
+import type { ReactElement } from 'react'
 import { ProductGrid } from './ProductGrid'
 import type { Product } from '../../api/resources'
 
@@ -10,7 +12,8 @@ const products: Product[] = [
     description: 'Full-bodied.',
     priceInCents: 1899900,
     stock: 12,
-    imageUrl: 'http://x/dark-roast.jpg',
+    imageUrls: ['http://x/dark-roast.jpg'],
+    tags: [],
   },
   {
     id: 'p2',
@@ -18,20 +21,25 @@ const products: Product[] = [
     description: 'Bright and floral.',
     priceInCents: 2199900,
     stock: 5,
-    imageUrl: 'http://x/light-roast.jpg',
+    imageUrls: ['http://x/light-roast.jpg'],
+    tags: [],
   },
 ]
 
+function renderGrid(ui: ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>)
+}
+
 describe('ProductGrid', () => {
   it('shows a spinner while loading', () => {
-    const { container } = render(
+    const { container } = renderGrid(
       <ProductGrid products={[]} loading error={null} onBuyNow={jest.fn()} onAddToCart={jest.fn()} />,
     )
     expect(container.querySelector('svg.animate-spin')).toBeInTheDocument()
   })
 
   it('shows the error message when the fetch failed', () => {
-    render(
+    renderGrid(
       <ProductGrid
         products={[]}
         loading={false}
@@ -44,14 +52,14 @@ describe('ProductGrid', () => {
   })
 
   it('shows an empty state when there are no products', () => {
-    render(
+    renderGrid(
       <ProductGrid products={[]} loading={false} error={null} onBuyNow={jest.fn()} onAddToCart={jest.fn()} />,
     )
     expect(screen.getByText('No products available right now.')).toBeInTheDocument()
   })
 
   it('renders one ProductCard per product', () => {
-    render(
+    renderGrid(
       <ProductGrid
         products={products}
         loading={false}
@@ -66,7 +74,7 @@ describe('ProductGrid', () => {
 
   it('forwards onBuyNow from the clicked card', async () => {
     const onBuyNow = jest.fn()
-    render(
+    renderGrid(
       <ProductGrid products={products} loading={false} error={null} onBuyNow={onBuyNow} onAddToCart={jest.fn()} />,
     )
 

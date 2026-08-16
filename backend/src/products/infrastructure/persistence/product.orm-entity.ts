@@ -21,8 +21,11 @@ export class ProductOrmEntity {
   @Column('int')
   stock: number;
 
-  @Column({ name: 'image_url' })
-  imageUrl: string;
+  @Column({ name: 'image_urls', type: 'text', array: true })
+  imageUrls: string[];
+
+  @Column({ type: 'text', array: true, default: '{}' })
+  tags: string[];
 
   @OneToMany(() => TransactionItemOrmEntity, (item) => item.product)
   transactionItems?: TransactionItemOrmEntity[];

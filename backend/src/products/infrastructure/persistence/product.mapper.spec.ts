@@ -11,7 +11,7 @@ describe('ProductMapper', () => {
       orm.description = 'A widget.';
       orm.priceInCents = 1999;
       orm.stock = 12;
-      orm.imageUrl = 'http://x/widget.jpg';
+      orm.imageUrls = ['http://x/widget.jpg'];
 
       const domain = ProductMapper.toDomain(orm);
 
@@ -21,7 +21,7 @@ describe('ProductMapper', () => {
       expect(domain.description).toBe('A widget.');
       expect(domain.priceInCents).toBe(1999);
       expect(domain.stock).toBe(12);
-      expect(domain.imageUrl).toBe('http://x/widget.jpg');
+      expect(domain.imageUrls).toEqual(['http://x/widget.jpg']);
     });
   });
 
@@ -33,7 +33,8 @@ describe('ProductMapper', () => {
         'A widget.',
         1999,
         12,
-        'http://x/widget.jpg',
+        ['http://x/widget.jpg'],
+        [],
       );
 
       const orm = ProductMapper.toOrm(domain);
@@ -44,7 +45,7 @@ describe('ProductMapper', () => {
       expect(orm.description).toBe('A widget.');
       expect(orm.priceInCents).toBe(1999);
       expect(orm.stock).toBe(12);
-      expect(orm.imageUrl).toBe('http://x/widget.jpg');
+      expect(orm.imageUrls).toEqual(['http://x/widget.jpg']);
     });
   });
 });

@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
+import { MemoryRouter } from 'react-router-dom'
 import { ProductCatalogPage } from './ProductCatalogPage'
 import checkoutReducer from '../features/checkout/checkoutSlice'
 import * as productsApi from '../api/products/products'
@@ -17,14 +18,17 @@ const product: Product = {
   description: 'Full-bodied.',
   priceInCents: 1899900,
   stock: 12,
-  imageUrl: 'http://x/dark-roast.jpg',
+  imageUrls: ['http://x/dark-roast.jpg'],
+  tags: [],
 }
 
 function renderWithStore() {
   const store = configureStore({ reducer: { checkout: checkoutReducer } })
   render(
     <Provider store={store}>
-      <ProductCatalogPage />
+      <MemoryRouter>
+        <ProductCatalogPage />
+      </MemoryRouter>
     </Provider>,
   )
   return store
@@ -57,6 +61,7 @@ describe('ProductCatalogPage', () => {
         name: 'Colombian Dark Roast',
         priceInCents: 1899900,
         imageUrl: 'http://x/dark-roast.jpg',
+        stock: 12,
         quantity: 1,
       },
     ])

@@ -20,8 +20,18 @@ export class ProductResponseDto {
   @ApiProperty({ example: 42, description: 'Units currently available.' })
   stock: number;
 
-  @ApiProperty({ example: 'https://cdn.example.com/products/headphones.jpg' })
-  imageUrl: string;
+  @ApiProperty({
+    example: ['https://cdn.example.com/products/headphones-1.jpg'],
+    description:
+      'Ordered gallery — first entry is the primary/catalog-card image.',
+  })
+  imageUrls: string[];
+
+  @ApiProperty({
+    example: ['Colombia', 'Medium roast'],
+    description: 'Freeform display labels — category-agnostic.',
+  })
+  tags: string[];
 
   static fromDomain(product: Product): ProductResponseDto {
     const dto = new ProductResponseDto();
@@ -30,7 +40,8 @@ export class ProductResponseDto {
     dto.description = product.description;
     dto.priceInCents = product.priceInCents;
     dto.stock = product.stock;
-    dto.imageUrl = product.imageUrl;
+    dto.imageUrls = product.imageUrls;
+    dto.tags = product.tags;
     return dto;
   }
 }

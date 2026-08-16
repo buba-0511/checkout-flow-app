@@ -12,7 +12,8 @@ const product: Product = {
   description: 'A widget.',
   priceInCents: 1000,
   stock: 5,
-  imageUrl: 'http://x/widget.jpg',
+  imageUrls: ['http://x/widget.jpg'],
+  tags: [],
 }
 
 afterEach(() => {

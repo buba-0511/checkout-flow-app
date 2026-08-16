@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
@@ -17,6 +18,7 @@ async function bootstrap() {
       : undefined;
 
   const app = await NestFactory.create(AppModule, { httpsOptions });
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   // CSP stays on — only script-src/style-src get 'unsafe-inline' added,
   // which Swagger UI needs; everything else keeps helmet's strict defaults.

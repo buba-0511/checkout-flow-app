@@ -15,6 +15,9 @@ export interface CartLine {
   name: string;
   priceInCents: number;
   imageUrl: string;
+  // Snapshotted at add-time, same as priceInCents — the stepper's max bound
+  // in the cart sheet doesn't need a fresh product fetch.
+  stock: number;
   quantity: number;
 }
 
@@ -27,12 +30,17 @@ export interface CheckoutState {
   step: CheckoutStep;
   source: TransactionSource | null;
   cart: CartLine[];
+  // Desktop nav cart icon / mobile floating bar both open this same sheet.
+  cartSheetOpen: boolean;
   customer: CustomerInput | null;
   delivery: DeliveryInput | null;
   cardToken: string | null;
+  // Display-only, from the tokenization response — never the full PAN.
+  cardBrand: string | null;
+  cardLastFour: string | null;
   installments: number;
   transaction: Transaction | null;
-  status: 'idle' | 'submitting' | 'polling' | 'error';
+  status: 'idle' | 'submitting' | 'awaitingResult' | 'error';
   error: ApiError | null;
 }
 
@@ -41,37 +49,37 @@ export const initialState: CheckoutState = {
   step: 'details',
   source: null,
   cart: [],
+  cartSheetOpen: false,
   customer: null,
   delivery: null,
   cardToken: null,
+  cardBrand: null,
+  cardLastFour: null,
   installments: 1,
   transaction: null,
   status: 'idle',
   error: null,
 };
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+// Shared by the socket push and the catch-up fetch below — a snapshot that's
+// still PENDING means the payment hasn't actually resolved yet, so keep
+// waiting instead of prematurely leaving the "awaitingResult" state.
+function applyTransactionSnapshot(state: CheckoutState, transaction: Transaction): void {
+  state.transaction = transaction;
+  state.status = transaction.status === TransactionStatus.PENDING ? 'awaitingResult' : 'idle';
 }
 
-const POLL_INTERVAL_MS = 2000;
-const POLL_MAX_ATTEMPTS = 30;
-
-// Webhook resolution is async — polls our own GET /transactions/:id until
-// it's no longer PENDING, or POLL_MAX_ATTEMPTS is reached.
-export const pollTransactionUntilResolved = createAsyncThunk<
+// Webhook resolution is pushed live over the transactions socket (see
+// lib/socket.ts + CheckoutResultPage). This is a one-shot fetch, not a
+// poll — used only as a catch-up read for the case where the socket
+// subscribes after the webhook already resolved the transaction (e.g. the
+// page was refreshed while the payment was still settling).
+export const syncTransactionStatus = createAsyncThunk<
   Transaction,
   string,
   { rejectValue: ApiError }
->('checkout/pollTransactionUntilResolved', async (transactionId, { rejectWithValue }) => {
+>('checkout/syncTransactionStatus', async (transactionId, { rejectWithValue }) => {
   try {
-    for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt++) {
-      const transaction = await getTransaction(transactionId);
-      if (transaction.status !== TransactionStatus.PENDING) {
-        return transaction;
-      }
-      await sleep(POLL_INTERVAL_MS);
-    }
     return await getTransaction(transactionId);
   } catch (err) {
     return rejectWithValue(err as ApiError);
@@ -82,7 +90,7 @@ export const submitTransaction = createAsyncThunk<
   Transaction,
   void,
   { state: { checkout: CheckoutState }; rejectValue: ApiError }
->('checkout/submitTransaction', async (_, { getState, rejectWithValue, dispatch }) => {
+>('checkout/submitTransaction', async (_, { getState, rejectWithValue }) => {
   const { checkout } = getState();
   if (!checkout.customer || !checkout.delivery || !checkout.cardToken || !checkout.source) {
     return rejectWithValue({
@@ -105,7 +113,6 @@ export const submitTransaction = createAsyncThunk<
         installments: checkout.installments,
       },
     });
-    void dispatch(pollTransactionUntilResolved(transaction.id));
     return transaction;
   } catch (err) {
     return rejectWithValue(err as ApiError);
@@ -120,12 +127,14 @@ const checkoutSlice = createSlice({
     startBuyNow(state, action: PayloadAction<{ product: Product; quantity: number }>) {
       const { product, quantity } = action.payload;
       state.source = TransactionSource.BUY_NOW;
+      state.cartSheetOpen = false;
       state.cart = [
         {
           productId: product.id,
           name: product.name,
           priceInCents: product.priceInCents,
-          imageUrl: product.imageUrl,
+          imageUrl: product.imageUrls[0],
+          stock: product.stock,
           quantity,
         },
       ];
@@ -137,12 +146,14 @@ const checkoutSlice = createSlice({
       const existing = state.cart.find((line) => line.productId === product.id);
       if (existing) {
         existing.quantity += quantity;
+        existing.stock = product.stock;
       } else {
         state.cart.push({
           productId: product.id,
           name: product.name,
           priceInCents: product.priceInCents,
-          imageUrl: product.imageUrl,
+          imageUrl: product.imageUrls[0],
+          stock: product.stock,
           quantity,
         });
       }
@@ -158,8 +169,15 @@ const checkoutSlice = createSlice({
     },
     startCartCheckout(state) {
       state.source = TransactionSource.CART;
+      state.cartSheetOpen = false;
       state.view = 'checkout';
       state.step = 'details';
+    },
+    openCartSheet(state) {
+      state.cartSheetOpen = true;
+    },
+    closeCartSheet(state) {
+      state.cartSheetOpen = false;
     },
     setCustomer(state, action: PayloadAction<CustomerInput>) {
       state.customer = action.payload;
@@ -167,12 +185,27 @@ const checkoutSlice = createSlice({
     setDelivery(state, action: PayloadAction<DeliveryInput>) {
       state.delivery = action.payload;
     },
-    setPaymentMethod(state, action: PayloadAction<{ cardToken: string; installments: number }>) {
+    setPaymentMethod(
+      state,
+      action: PayloadAction<{
+        cardToken: string;
+        cardBrand: string;
+        cardLastFour: string;
+        installments: number;
+      }>,
+    ) {
       state.cardToken = action.payload.cardToken;
+      state.cardBrand = action.payload.cardBrand;
+      state.cardLastFour = action.payload.cardLastFour;
       state.installments = action.payload.installments;
     },
     goToStep(state, action: PayloadAction<CheckoutStep>) {
       state.step = action.payload;
+    },
+    // Pushed by the transactions socket once the webhook resolves the
+    // payment — see lib/socket.ts + CheckoutResultPage.
+    transactionStatusUpdated(state, action: PayloadAction<Transaction>) {
+      applyTransactionSnapshot(state, action.payload);
     },
     // Step 5 — back to catalog, clear everything so the next checkout starts fresh.
     resetCheckout() {
@@ -188,17 +221,16 @@ const checkoutSlice = createSlice({
       .addCase(submitTransaction.fulfilled, (state, action) => {
         state.transaction = action.payload;
         state.step = 'result';
-        state.status = 'polling';
+        state.status = 'awaitingResult';
       })
       .addCase(submitTransaction.rejected, (state, action) => {
         state.status = 'error';
         state.error = action.payload ?? { code: 'UNKNOWN', message: 'Something went wrong.' };
       })
-      .addCase(pollTransactionUntilResolved.fulfilled, (state, action) => {
-        state.transaction = action.payload;
-        state.status = 'idle';
+      .addCase(syncTransactionStatus.fulfilled, (state, action) => {
+        applyTransactionSnapshot(state, action.payload);
       })
-      .addCase(pollTransactionUntilResolved.rejected, (state, action) => {
+      .addCase(syncTransactionStatus.rejected, (state, action) => {
         state.status = 'error';
         state.error = action.payload ?? { code: 'UNKNOWN', message: 'Something went wrong.' };
       });
@@ -211,10 +243,13 @@ export const {
   updateCartQuantity,
   removeFromCart,
   startCartCheckout,
+  openCartSheet,
+  closeCartSheet,
   setCustomer,
   setDelivery,
   setPaymentMethod,
   goToStep,
+  transactionStatusUpdated,
   resetCheckout,
 } = checkoutSlice.actions;
 

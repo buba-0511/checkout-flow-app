@@ -11,6 +11,8 @@ services:
       - ./certs:/app/certs:ro
     environment:
       VITE_API_BASE_URL: https://localhost:3000
+      VITE_PAYMENT_GATEWAY_API_URL: ${PAYMENT_GATEWAY_API_URL}
+      VITE_PAYMENT_GATEWAY_PUBLIC_KEY: ${PAYMENT_GATEWAY_PUBLIC_KEY}
       SSL_CERT_PATH: /app/certs/localhost.pem
       SSL_KEY_PATH: /app/certs/localhost-key.pem
     depends_on:

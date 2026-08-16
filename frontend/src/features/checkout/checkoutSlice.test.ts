@@ -6,13 +6,16 @@ import checkoutReducer, {
   updateCartQuantity,
   removeFromCart,
   startCartCheckout,
+  openCartSheet,
+  closeCartSheet,
   setCustomer,
   setDelivery,
   setPaymentMethod,
   goToStep,
   resetCheckout,
   submitTransaction,
-  pollTransactionUntilResolved,
+  syncTransactionStatus,
+  transactionStatusUpdated,
   type CheckoutState,
 } from './checkoutSlice'
 import * as transactionsApi from '../../api/transactions/transactions'
@@ -33,7 +36,8 @@ const product: Product = {
   description: 'A widget.',
   priceInCents: 1000,
   stock: 5,
-  imageUrl: 'http://x/widget.jpg',
+  imageUrls: ['http://x/widget.jpg'],
+  tags: [],
 }
 
 const customer = {
@@ -70,7 +74,7 @@ describe('checkoutSlice reducers', () => {
     const state = checkoutReducer(initialState, startBuyNow({ product, quantity: 2 }))
     expect(state.source).toBe(TransactionSource.BUY_NOW)
     expect(state.cart).toEqual([
-      { productId: 'p1', name: 'Widget', priceInCents: 1000, imageUrl: 'http://x/widget.jpg', quantity: 2 },
+      { productId: 'p1', name: 'Widget', priceInCents: 1000, imageUrl: 'http://x/widget.jpg', stock: 5, quantity: 2 },
     ])
     expect(state.view).toBe('checkout')
     expect(state.step).toBe('details')
@@ -101,20 +105,41 @@ describe('checkoutSlice reducers', () => {
     expect(state.cart).toEqual([])
   })
 
-  it('startCartCheckout sets source CART and moves to checkout/details', () => {
-    const state = checkoutReducer(initialState, startCartCheckout())
+  it('addToCart refreshes the snapshotted stock on an existing line', () => {
+    let state = checkoutReducer(initialState, addToCart({ product, quantity: 1 }))
+    expect(state.cart[0].stock).toBe(5)
+    state = checkoutReducer(state, addToCart({ product: { ...product, stock: 2 }, quantity: 1 }))
+    expect(state.cart[0].stock).toBe(2)
+  })
+
+  it('startCartCheckout sets source CART, closes the cart sheet, and moves to checkout/details', () => {
+    const opened = checkoutReducer(initialState, openCartSheet())
+    const state = checkoutReducer(opened, startCartCheckout())
     expect(state.source).toBe(TransactionSource.CART)
+    expect(state.cartSheetOpen).toBe(false)
     expect(state.view).toBe('checkout')
     expect(state.step).toBe('details')
+  })
+
+  it('openCartSheet and closeCartSheet toggle cartSheetOpen', () => {
+    let state = checkoutReducer(initialState, openCartSheet())
+    expect(state.cartSheetOpen).toBe(true)
+    state = checkoutReducer(state, closeCartSheet())
+    expect(state.cartSheetOpen).toBe(false)
   })
 
   it('setCustomer, setDelivery, and setPaymentMethod store their form data', () => {
     let state = checkoutReducer(initialState, setCustomer(customer))
     state = checkoutReducer(state, setDelivery(delivery))
-    state = checkoutReducer(state, setPaymentMethod({ cardToken: 'tok_1', installments: 3 }))
+    state = checkoutReducer(
+      state,
+      setPaymentMethod({ cardToken: 'tok_1', cardBrand: 'VISA', cardLastFour: '4242', installments: 3 }),
+    )
     expect(state.customer).toEqual(customer)
     expect(state.delivery).toEqual(delivery)
     expect(state.cardToken).toBe('tok_1')
+    expect(state.cardBrand).toBe('VISA')
+    expect(state.cardLastFour).toBe('4242')
     expect(state.installments).toBe(3)
   })
 
@@ -134,7 +159,7 @@ describe('submitTransaction thunk', () => {
   function primedStore() {
     return makeStore({
       source: TransactionSource.BUY_NOW,
-      cart: [{ productId: 'p1', name: 'Widget', priceInCents: 1000, imageUrl: 'x', quantity: 1 }],
+      cart: [{ productId: 'p1', name: 'Widget', priceInCents: 1000, imageUrl: 'x', stock: 5, quantity: 1 }],
       customer,
       delivery,
       cardToken: 'tok_1',
@@ -152,12 +177,8 @@ describe('submitTransaction thunk', () => {
     expect(transactionsApi.createTransaction).not.toHaveBeenCalled()
   })
 
-  it('creates the transaction, moves to the result step, and starts polling on success', async () => {
+  it('creates the transaction, moves to the result step, and awaits the webhook-driven result', async () => {
     jest.mocked(transactionsApi.createTransaction).mockResolvedValue(transaction)
-    jest.mocked(transactionsApi.getTransaction).mockResolvedValue({
-      ...transaction,
-      status: TransactionStatus.APPROVED,
-    })
     const store = primedStore()
 
     await store.dispatch(submitTransaction())
@@ -171,6 +192,7 @@ describe('submitTransaction thunk', () => {
     })
     expect(store.getState().checkout.step).toBe('result')
     expect(store.getState().checkout.transaction?.id).toBe('t1')
+    expect(store.getState().checkout.status).toBe('awaitingResult')
   })
 
   it('sets status to error when the API call fails', async () => {
@@ -186,45 +208,51 @@ describe('submitTransaction thunk', () => {
   })
 })
 
-describe('pollTransactionUntilResolved thunk', () => {
-  it('resolves immediately when the transaction is no longer PENDING', async () => {
+describe('syncTransactionStatus thunk', () => {
+  it('applies a resolved snapshot and clears the awaiting state', async () => {
     jest.mocked(transactionsApi.getTransaction).mockResolvedValue({
       ...transaction,
       status: TransactionStatus.APPROVED,
     })
-    const store = makeStore()
+    const store = makeStore({ status: 'awaitingResult' })
 
-    await store.dispatch(pollTransactionUntilResolved('t1'))
+    await store.dispatch(syncTransactionStatus('t1'))
 
     expect(transactionsApi.getTransaction).toHaveBeenCalledTimes(1)
     expect(store.getState().checkout.transaction?.status).toBe(TransactionStatus.APPROVED)
     expect(store.getState().checkout.status).toBe('idle')
   })
 
-  it('polls again while still PENDING, then stops once resolved', async () => {
-    jest.useFakeTimers()
-    jest
-      .mocked(transactionsApi.getTransaction)
-      .mockResolvedValueOnce({ ...transaction, status: TransactionStatus.PENDING })
-      .mockResolvedValueOnce({ ...transaction, status: TransactionStatus.DECLINED })
-    const store = makeStore()
+  it('keeps awaiting when the snapshot is still PENDING (the socket push hasn\'t landed yet)', async () => {
+    jest.mocked(transactionsApi.getTransaction).mockResolvedValue({
+      ...transaction,
+      status: TransactionStatus.PENDING,
+    })
+    const store = makeStore({ status: 'awaitingResult' })
 
-    const dispatched = store.dispatch(pollTransactionUntilResolved('t1'))
-    await jest.advanceTimersByTimeAsync(2000)
-    await dispatched
+    await store.dispatch(syncTransactionStatus('t1'))
 
-    expect(transactionsApi.getTransaction).toHaveBeenCalledTimes(2)
-    expect(store.getState().checkout.transaction?.status).toBe(TransactionStatus.DECLINED)
-    jest.useRealTimers()
+    expect(store.getState().checkout.status).toBe('awaitingResult')
   })
 
   it('sets status to error when the API call fails', async () => {
     jest.mocked(transactionsApi.getTransaction).mockRejectedValue({ code: 'NETWORK_ERROR', message: 'x' })
     const store = makeStore()
 
-    await store.dispatch(pollTransactionUntilResolved('t1'))
+    await store.dispatch(syncTransactionStatus('t1'))
 
     expect(store.getState().checkout.status).toBe('error')
     expect(store.getState().checkout.error?.code).toBe('NETWORK_ERROR')
+  })
+})
+
+describe('transactionStatusUpdated reducer', () => {
+  it('applies a resolved push and clears the awaiting state', () => {
+    const state = checkoutReducer(
+      { ...initialState, status: 'awaitingResult' },
+      transactionStatusUpdated({ ...transaction, status: TransactionStatus.APPROVED }),
+    )
+    expect(state.transaction?.status).toBe(TransactionStatus.APPROVED)
+    expect(state.status).toBe('idle')
   })
 })

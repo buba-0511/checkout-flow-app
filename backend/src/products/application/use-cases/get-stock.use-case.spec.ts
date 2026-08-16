@@ -22,7 +22,8 @@ describe('GetStockUseCase', () => {
       'A widget.',
       1000,
       7,
-      'http://x/1.jpg',
+      ['http://x/1.jpg'],
+      [],
     );
     repository.findById.mockResolvedValue(product);
 

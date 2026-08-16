@@ -23,7 +23,7 @@ function makeOrmEntity(id: string, stock = 10): ProductOrmEntity {
   orm.description = 'A widget.';
   orm.priceInCents = 1000;
   orm.stock = stock;
-  orm.imageUrl = 'http://x/widget.jpg';
+  orm.imageUrls = ['http://x/widget.jpg'];
   return orm;
 }
 
@@ -131,7 +131,8 @@ describe('TypeOrmProductRepository', () => {
         'A widget.',
         1000,
         10,
-        'http://x/1.jpg',
+        ['http://x/1.jpg'],
+        [],
       );
 
       await repository.save(product);
@@ -144,8 +145,24 @@ describe('TypeOrmProductRepository', () => {
     it('maps every domain product to an ORM entity before saving', async () => {
       const { ormRepo, repository } = setup();
       const products = [
-        new Product('p1', 'Widget', 'A widget.', 1000, 10, 'http://x/1.jpg'),
-        new Product('p2', 'Gadget', 'A gadget.', 2000, 5, 'http://x/2.jpg'),
+        new Product(
+          'p1',
+          'Widget',
+          'A widget.',
+          1000,
+          10,
+          ['http://x/1.jpg'],
+          [],
+        ),
+        new Product(
+          'p2',
+          'Gadget',
+          'A gadget.',
+          2000,
+          5,
+          ['http://x/2.jpg'],
+          [],
+        ),
       ];
 
       await repository.saveMany(products);
@@ -158,7 +175,15 @@ describe('TypeOrmProductRepository', () => {
     it('saves through the transactional EntityManager when a ctx is passed', async () => {
       const { ormRepo, repository } = setup();
       const products = [
-        new Product('p1', 'Widget', 'A widget.', 1000, 10, 'http://x/1.jpg'),
+        new Product(
+          'p1',
+          'Widget',
+          'A widget.',
+          1000,
+          10,
+          ['http://x/1.jpg'],
+          [],
+        ),
       ];
       const txRepo = { save: jest.fn() };
       const manager = {

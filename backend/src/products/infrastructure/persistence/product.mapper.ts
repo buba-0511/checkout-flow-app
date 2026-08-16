@@ -9,7 +9,8 @@ export class ProductMapper {
       orm.description,
       orm.priceInCents,
       orm.stock,
-      orm.imageUrl,
+      orm.imageUrls,
+      orm.tags,
     );
   }
 
@@ -20,7 +21,8 @@ export class ProductMapper {
     orm.description = domain.description;
     orm.priceInCents = domain.priceInCents;
     orm.stock = domain.stock;
-    orm.imageUrl = domain.imageUrl;
+    orm.imageUrls = domain.imageUrls;
+    orm.tags = domain.tags;
     return orm;
   }
 }

@@ -27,7 +27,15 @@ describe('ProductsController', () => {
     it('passes the query cursor/limit to the use case and maps the page to DTOs', async () => {
       const { controller, listProductsUseCase } = setup();
       const products = [
-        new Product('p1', 'Widget', 'A widget.', 1000, 10, 'http://x/1.jpg'),
+        new Product(
+          'p1',
+          'Widget',
+          'A widget.',
+          1000,
+          10,
+          ['http://x/1.jpg'],
+          [],
+        ),
       ];
       listProductsUseCase.execute.mockResolvedValue(
         Result.ok({ items: products, nextCursor: 'p1' }),
@@ -47,7 +55,8 @@ describe('ProductsController', () => {
             description: 'A widget.',
             priceInCents: 1000,
             stock: 10,
-            imageUrl: 'http://x/1.jpg',
+            imageUrls: ['http://x/1.jpg'],
+            tags: [],
           },
         ],
         nextCursor: 'p1',
@@ -64,7 +73,8 @@ describe('ProductsController', () => {
         'A widget.',
         1000,
         10,
-        'http://x/1.jpg',
+        ['http://x/1.jpg'],
+        [],
       );
       getProductByIdUseCase.execute.mockResolvedValue(Result.ok(product));
 

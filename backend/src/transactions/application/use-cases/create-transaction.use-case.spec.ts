@@ -13,7 +13,7 @@ import type { FindOrCreateCustomerUseCase } from '../../../customers/application
 import { Delivery } from '../../../deliveries/domain/delivery.entity';
 import type { CreateDeliveryUseCase } from '../../../deliveries/application/use-cases/create-delivery.use-case';
 import { Product } from '../../../products/domain/product.entity';
-import type { DecreaseStockUseCase } from '../../../products/application/use-cases/decrease-stock.use-case';
+import type { ValidateStockUseCase } from '../../../products/application/use-cases/validate-stock.use-case';
 import {
   TransactionSource,
   TransactionStatus,
@@ -30,10 +30,11 @@ function createMockTransactionManager(): jest.Mocked<TransactionManager> {
     // Runs work immediately against a fake ctx — good enough for unit
     // tests, since runInTransaction's rollback-bridging logic runs for
     // real here; only the actual Postgres transaction is stubbed out.
+    // jest.fn() can't preserve TransactionManager.run's own <T>, hence the cast.
     run: jest.fn((work: (ctx: TransactionContext) => Promise<unknown>) =>
       work({}),
     ),
-  };
+  } as unknown as jest.Mocked<TransactionManager>;
 }
 
 function createMockTransactionRepository(): jest.Mocked<TransactionRepository> {
@@ -60,8 +61,8 @@ function createMockCreateDeliveryUseCase() {
   } as unknown as jest.Mocked<CreateDeliveryUseCase>;
 }
 
-function createMockDecreaseStockUseCase() {
-  return { execute: jest.fn() } as unknown as jest.Mocked<DecreaseStockUseCase>;
+function createMockValidateStockUseCase() {
+  return { execute: jest.fn() } as unknown as jest.Mocked<ValidateStockUseCase>;
 }
 
 const customer = new Customer(
@@ -87,7 +88,8 @@ const product = new Product(
   'A widget.',
   1000,
   10,
-  'http://x/1.jpg',
+  ['http://x/1.jpg'],
+  [],
 );
 
 const input: CreateTransactionInput = {
@@ -114,11 +116,11 @@ function setup() {
   const paymentGateway = createMockPaymentGateway();
   const findOrCreateCustomerUseCase = createMockFindOrCreateCustomerUseCase();
   const createDeliveryUseCase = createMockCreateDeliveryUseCase();
-  const decreaseStockUseCase = createMockDecreaseStockUseCase();
+  const validateStockUseCase = createMockValidateStockUseCase();
 
   findOrCreateCustomerUseCase.execute.mockResolvedValue(Result.ok(customer));
   createDeliveryUseCase.execute.mockResolvedValue(Result.ok(delivery));
-  decreaseStockUseCase.execute.mockResolvedValue(Result.ok([product]));
+  validateStockUseCase.execute.mockResolvedValue(Result.ok([product]));
   paymentGateway.createTransaction.mockResolvedValue({
     gatewayTransactionId: 'gw_123',
   });
@@ -129,7 +131,7 @@ function setup() {
     paymentGateway,
     findOrCreateCustomerUseCase,
     createDeliveryUseCase,
-    decreaseStockUseCase,
+    validateStockUseCase,
   );
 
   return {
@@ -139,7 +141,7 @@ function setup() {
     paymentGateway,
     findOrCreateCustomerUseCase,
     createDeliveryUseCase,
-    decreaseStockUseCase,
+    validateStockUseCase,
   };
 }
 
@@ -155,6 +157,16 @@ describe('CreateTransactionUseCase', () => {
     expect(result.value.items[0].subtotalInCents).toBe(2000);
     expect(result.value.subtotalInCents).toBe(2000);
     expect(result.value.status).toBe(TransactionStatus.PENDING);
+  });
+
+  it('validates stock without decrementing it — the transaction is only reserved on paper', async () => {
+    const { useCase, validateStockUseCase } = setup();
+
+    await useCase.execute(input);
+
+    expect(validateStockUseCase.execute).toHaveBeenCalledWith(input.items);
+    // Read-only check — no TransactionContext, unlike the writes below.
+    expect(validateStockUseCase.execute.mock.calls[0]).toHaveLength(1);
   });
 
   it('sends the transaction to the payment gateway after the DB transaction commits, and stores the gateway reference', async () => {
@@ -181,7 +193,6 @@ describe('CreateTransactionUseCase', () => {
       useCase,
       findOrCreateCustomerUseCase,
       createDeliveryUseCase,
-      decreaseStockUseCase,
       transactionRepository,
     } = setup();
 
@@ -190,7 +201,6 @@ describe('CreateTransactionUseCase', () => {
     const ctx = findOrCreateCustomerUseCase.execute.mock.calls[0][1];
     expect(ctx).toBeDefined();
     expect(createDeliveryUseCase.execute.mock.calls[0][1]).toBe(ctx);
-    expect(decreaseStockUseCase.execute.mock.calls[0][1]).toBe(ctx);
     expect(transactionRepository.save.mock.calls[0][1]).toBe(ctx);
   });
 
@@ -199,7 +209,7 @@ describe('CreateTransactionUseCase', () => {
       useCase,
       findOrCreateCustomerUseCase,
       createDeliveryUseCase,
-      decreaseStockUseCase,
+      validateStockUseCase,
       paymentGateway,
       transactionRepository,
     } = setup();
@@ -212,7 +222,7 @@ describe('CreateTransactionUseCase', () => {
     expect(result.isErr()).toBe(true);
     expect(result.error.code).toBe(ErrorCode.VALIDATION_ERROR);
     expect(createDeliveryUseCase.execute).not.toHaveBeenCalled();
-    expect(decreaseStockUseCase.execute).not.toHaveBeenCalled();
+    expect(validateStockUseCase.execute).not.toHaveBeenCalled();
     expect(transactionRepository.save).not.toHaveBeenCalled();
     expect(paymentGateway.createTransaction).not.toHaveBeenCalled();
   });
@@ -221,7 +231,7 @@ describe('CreateTransactionUseCase', () => {
     const {
       useCase,
       createDeliveryUseCase,
-      decreaseStockUseCase,
+      validateStockUseCase,
       paymentGateway,
       transactionRepository,
     } = setup();
@@ -233,19 +243,19 @@ describe('CreateTransactionUseCase', () => {
 
     expect(result.isErr()).toBe(true);
     expect(result.error.code).toBe(ErrorCode.CUSTOMER_NOT_FOUND);
-    expect(decreaseStockUseCase.execute).not.toHaveBeenCalled();
+    expect(validateStockUseCase.execute).not.toHaveBeenCalled();
     expect(transactionRepository.save).not.toHaveBeenCalled();
     expect(paymentGateway.createTransaction).not.toHaveBeenCalled();
   });
 
-  it('rolls back and returns the error when stock decrement fails, without saving or calling the gateway', async () => {
+  it('rolls back and returns the error when stock validation fails, without saving or calling the gateway', async () => {
     const {
       useCase,
-      decreaseStockUseCase,
+      validateStockUseCase,
       paymentGateway,
       transactionRepository,
     } = setup();
-    decreaseStockUseCase.execute.mockResolvedValue(
+    validateStockUseCase.execute.mockResolvedValue(
       Result.err(
         new DomainError(ErrorCode.STOCK_INSUFFICIENT, 'not enough stock'),
       ),
