@@ -34,7 +34,9 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Checkout Flow API')
     .setDescription(
-      'Stock, transactions, customers, and deliveries for the checkout flow app.',
+      'Stock, transactions, customers, and deliveries for the checkout flow app. ' +
+        'Rate limited to 100 requests/minute per IP by default (429 Too Many Requests once exceeded); ' +
+        'individual endpoints may set a tighter limit — see their own description.',
     )
     .setVersion('0.1')
     .build();

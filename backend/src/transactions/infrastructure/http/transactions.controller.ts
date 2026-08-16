@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Logger,
   Param,
   ParseUUIDPipe,
   Post,
@@ -26,6 +27,8 @@ const HANDLED_WEBHOOK_EVENT = 'transaction.updated';
 @ApiTags('transactions')
 @Controller('transactions')
 export class TransactionsController {
+  private readonly logger = new Logger(TransactionsController.name);
+
   constructor(
     private readonly createTransactionUseCase: CreateTransactionUseCase,
     private readonly getTransactionByIdUseCase: GetTransactionByIdUseCase,
@@ -37,9 +40,13 @@ export class TransactionsController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({
     summary:
-      'Create a checkout transaction: resolves/creates the customer, creates the delivery, decrements stock, and sends the transaction to the payment gateway.',
+      'Create a checkout transaction: resolves/creates the customer, creates the delivery, decrements stock, and sends the transaction to the payment gateway. Rate limited to 10 requests/minute per IP.',
   })
   @ApiResponse({ status: 201, type: TransactionResponseDto })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many requests (limit: 10/min per IP).',
+  })
   async create(
     @Body() dto: CreateTransactionDto,
   ): Promise<TransactionResponseDto> {
@@ -75,6 +82,9 @@ export class TransactionsController {
     @Body() dto: TransactionWebhookEventDto,
   ): Promise<TransactionResponseDto | { received: true }> {
     if (!this.webhookSignatureVerifier.verify(dto)) {
+      this.logger.warn(
+        `Rejected webhook with invalid/stale signature — event "${dto.event}", reference "${dto.data?.transaction?.reference}"`,
+      );
       throw new UnauthorizedException('Invalid webhook signature.');
     }
 

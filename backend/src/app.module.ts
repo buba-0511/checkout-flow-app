@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { TerminusModule } from '@nestjs/terminus';
 import { ProductsModule } from './products/products.module';
 import { CustomersModule } from './customers/customers.module';
 import { DeliveriesModule } from './deliveries/deliveries.module';
 import { CommonModule } from './common/common.module';
+import { LoggingThrottlerGuard } from './common/logging-throttler.guard';
 import { TransactionsModule } from './transactions/transactions.module';
 
 @Module({
@@ -28,6 +29,6 @@ import { TransactionsModule } from './transactions/transactions.module';
     TransactionsModule,
   ],
   controllers: [AppController],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [{ provide: APP_GUARD, useClass: LoggingThrottlerGuard }],
 })
 export class AppModule {}

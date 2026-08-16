@@ -134,6 +134,9 @@ export class CreateTransactionUseCase {
         gatewayOutput.gatewayTransactionId,
       );
       await this.transactionRepository.save(transaction);
+      this.logger.log(
+        `Transaction "${transaction.id}" (ref "${transaction.reference}") sent to payment gateway — amount ${transaction.totalAmountInCents} COP`,
+      );
     } catch (err) {
       // DB work above already committed — this row stays PENDING, no gatewayTransactionId.
       // Full detail (may include gateway response internals) stays server-side only.

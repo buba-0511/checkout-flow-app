@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Result } from '../../../common/result';
 import { DomainError } from '../../../common/errors/domain-error';
 import { ErrorCode } from '../../../common/errors/error-code';
@@ -10,6 +10,8 @@ import {
 
 @Injectable()
 export class GetProductByIdUseCase {
+  private readonly logger = new Logger(GetProductByIdUseCase.name);
+
   constructor(
     @Inject(PRODUCT_REPOSITORY)
     private readonly productRepository: ProductRepository,
@@ -19,6 +21,7 @@ export class GetProductByIdUseCase {
     const product = await this.productRepository.findById(id);
 
     if (!product) {
+      this.logger.warn(`Product "${id}" was not found`);
       return Result.err(
         new DomainError(
           ErrorCode.PRODUCT_NOT_FOUND,

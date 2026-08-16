@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Result } from '../../../common/result';
 import { DomainError } from '../../../common/errors/domain-error';
 import { Product } from '../../domain/product.entity';
@@ -20,6 +20,8 @@ export interface ProductPage {
 
 @Injectable()
 export class ListProductsUseCase {
+  private readonly logger = new Logger(ListProductsUseCase.name);
+
   constructor(
     @Inject(PRODUCT_REPOSITORY)
     private readonly productRepository: ProductRepository,
@@ -35,6 +37,9 @@ export class ListProductsUseCase {
     const items = hasNextPage ? products.slice(0, params.limit) : products;
     const nextCursor = hasNextPage ? items[items.length - 1].id : null;
 
+    this.logger.debug(
+      `Listed ${items.length} product(s), cursor "${params.cursor ?? ''}"`,
+    );
     return Result.ok({ items, nextCursor });
   }
 }

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Result } from '../../../common/result';
 import { DomainError } from '../../../common/errors/domain-error';
 import { ErrorCode } from '../../../common/errors/error-code';
@@ -16,6 +16,8 @@ export interface DecreaseStockItem {
 
 @Injectable()
 export class DecreaseStockUseCase {
+  private readonly logger = new Logger(DecreaseStockUseCase.name);
+
   constructor(
     @Inject(PRODUCT_REPOSITORY)
     private readonly productRepository: ProductRepository,
@@ -33,10 +35,12 @@ export class DecreaseStockUseCase {
       .andThen((products) => this.applyDecrease(items, products));
 
     if (result.isErr()) {
+      this.logger.warn(`Stock decrement failed: ${result.error.message}`);
       return Result.err(result.error);
     }
 
     await this.productRepository.saveMany(result.value, ctx);
+    this.logger.log(`Decremented stock for ${result.value.length} product(s)`);
     return Result.ok(result.value);
   }
 
