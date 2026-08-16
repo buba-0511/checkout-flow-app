@@ -87,7 +87,8 @@ const product = new Product(
   'A widget.',
   1000,
   10,
-  'http://x/1.jpg',
+  ['http://x/1.jpg'],
+  [],
 );
 
 const input: CreateTransactionInput = {

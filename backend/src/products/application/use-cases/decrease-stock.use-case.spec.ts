@@ -23,7 +23,8 @@ describe('DecreaseStockUseCase', () => {
       'A widget.',
       1000,
       10,
-      'http://x/1.jpg',
+      ['http://x/1.jpg'],
+      [],
     );
     repository.findByIds.mockResolvedValue([product]);
 
@@ -43,7 +44,8 @@ describe('DecreaseStockUseCase', () => {
       'A widget.',
       1000,
       10,
-      'http://x/1.jpg',
+      ['http://x/1.jpg'],
+      [],
     );
     const p2 = new Product(
       'p2',
@@ -51,7 +53,8 @@ describe('DecreaseStockUseCase', () => {
       'A gadget.',
       2000,
       5,
-      'http://x/2.jpg',
+      ['http://x/2.jpg'],
+      [],
     );
     repository.findByIds.mockResolvedValue([p1, p2]);
 
@@ -75,7 +78,8 @@ describe('DecreaseStockUseCase', () => {
       'A widget.',
       1000,
       10,
-      'http://x/1.jpg',
+      ['http://x/1.jpg'],
+      [],
     );
     // p2 requested but not returned by the repository — doesn't exist.
     repository.findByIds.mockResolvedValue([p1]);
@@ -101,7 +105,8 @@ describe('DecreaseStockUseCase', () => {
       'A widget.',
       1000,
       10,
-      'http://x/1.jpg',
+      ['http://x/1.jpg'],
+      [],
     );
     const p2 = new Product(
       'p2',
@@ -109,7 +114,8 @@ describe('DecreaseStockUseCase', () => {
       'A gadget.',
       2000,
       2,
-      'http://x/2.jpg',
+      ['http://x/2.jpg'],
+      [],
     );
     repository.findByIds.mockResolvedValue([p1, p2]);
 
@@ -141,7 +147,8 @@ describe('DecreaseStockUseCase', () => {
       'A widget.',
       1000,
       5,
-      'http://x/1.jpg',
+      ['http://x/1.jpg'],
+      [],
     );
     repository.findByIds.mockResolvedValue([product]);
 
@@ -160,7 +167,8 @@ describe('DecreaseStockUseCase', () => {
       'A widget.',
       1000,
       10,
-      'http://x/1.jpg',
+      ['http://x/1.jpg'],
+      [],
     );
     repository.findByIds.mockResolvedValue([product]);
     const ctx = {} as TransactionContext;

@@ -6,7 +6,9 @@ export interface Product {
   description: string;
   priceInCents: number;
   stock: number;
-  imageUrl: string;
+  // Ordered gallery — imageUrls[0] is the primary/catalog-card image.
+  imageUrls: string[];
+  tags: string[];
 }
 
 export interface ProductPage {

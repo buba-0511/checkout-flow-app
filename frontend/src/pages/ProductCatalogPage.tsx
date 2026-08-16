@@ -1,12 +1,14 @@
 import { Layout } from '../components/Layout'
 import { ProductGrid } from '../components/organisms/ProductGrid'
 import { useProducts } from '../features/catalog/useProducts'
-import { useAppDispatch } from '../store/hooks'
+import { useAppDispatch, useAppSelector } from '../store/hooks'
 import { addToCart, startBuyNow } from '../features/checkout/checkoutSlice'
+import { countItems } from '../lib/cart'
 import type { Product } from '../api/resources'
 
 export function ProductCatalogPage() {
   const { products, loading, error } = useProducts()
+  const itemCount = useAppSelector((state) => countItems(state.checkout.cart))
   const dispatch = useAppDispatch()
 
   function handleBuyNow(product: Product, quantity: number) {
@@ -27,13 +29,16 @@ export function ProductCatalogPage() {
           Single-origin beans from farms we know by name, roasted weekly and shipped fresh.
         </p>
       </div>
-      <ProductGrid
-        products={products}
-        loading={loading}
-        error={error}
-        onBuyNow={handleBuyNow}
-        onAddToCart={handleAddToCart}
-      />
+      {/* Reserves room for CartOverlay's floating mobile bar, mounted globally in App.tsx. */}
+      <div className={itemCount > 0 ? 'pb-24' : undefined}>
+        <ProductGrid
+          products={products}
+          loading={loading}
+          error={error}
+          onBuyNow={handleBuyNow}
+          onAddToCart={handleAddToCart}
+        />
+      </div>
     </Layout>
   )
 }

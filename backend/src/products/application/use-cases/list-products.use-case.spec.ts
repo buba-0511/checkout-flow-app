@@ -13,7 +13,15 @@ function createMockRepository(): jest.Mocked<ProductRepository> {
 }
 
 function product(id: string): Product {
-  return new Product(id, 'Widget', 'A widget.', 1000, 10, 'http://x/1.jpg');
+  return new Product(
+    id,
+    'Widget',
+    'A widget.',
+    1000,
+    10,
+    ['http://x/1.jpg'],
+    [],
+  );
 }
 
 describe('ListProductsUseCase', () => {

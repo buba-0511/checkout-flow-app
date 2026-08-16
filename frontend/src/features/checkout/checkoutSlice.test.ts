@@ -6,6 +6,8 @@ import checkoutReducer, {
   updateCartQuantity,
   removeFromCart,
   startCartCheckout,
+  openCartSheet,
+  closeCartSheet,
   setCustomer,
   setDelivery,
   setPaymentMethod,
@@ -33,7 +35,8 @@ const product: Product = {
   description: 'A widget.',
   priceInCents: 1000,
   stock: 5,
-  imageUrl: 'http://x/widget.jpg',
+  imageUrls: ['http://x/widget.jpg'],
+  tags: [],
 }
 
 const customer = {
@@ -70,7 +73,7 @@ describe('checkoutSlice reducers', () => {
     const state = checkoutReducer(initialState, startBuyNow({ product, quantity: 2 }))
     expect(state.source).toBe(TransactionSource.BUY_NOW)
     expect(state.cart).toEqual([
-      { productId: 'p1', name: 'Widget', priceInCents: 1000, imageUrl: 'http://x/widget.jpg', quantity: 2 },
+      { productId: 'p1', name: 'Widget', priceInCents: 1000, imageUrl: 'http://x/widget.jpg', stock: 5, quantity: 2 },
     ])
     expect(state.view).toBe('checkout')
     expect(state.step).toBe('details')
@@ -101,11 +104,27 @@ describe('checkoutSlice reducers', () => {
     expect(state.cart).toEqual([])
   })
 
-  it('startCartCheckout sets source CART and moves to checkout/details', () => {
-    const state = checkoutReducer(initialState, startCartCheckout())
+  it('addToCart refreshes the snapshotted stock on an existing line', () => {
+    let state = checkoutReducer(initialState, addToCart({ product, quantity: 1 }))
+    expect(state.cart[0].stock).toBe(5)
+    state = checkoutReducer(state, addToCart({ product: { ...product, stock: 2 }, quantity: 1 }))
+    expect(state.cart[0].stock).toBe(2)
+  })
+
+  it('startCartCheckout sets source CART, closes the cart sheet, and moves to checkout/details', () => {
+    const opened = checkoutReducer(initialState, openCartSheet())
+    const state = checkoutReducer(opened, startCartCheckout())
     expect(state.source).toBe(TransactionSource.CART)
+    expect(state.cartSheetOpen).toBe(false)
     expect(state.view).toBe('checkout')
     expect(state.step).toBe('details')
+  })
+
+  it('openCartSheet and closeCartSheet toggle cartSheetOpen', () => {
+    let state = checkoutReducer(initialState, openCartSheet())
+    expect(state.cartSheetOpen).toBe(true)
+    state = checkoutReducer(state, closeCartSheet())
+    expect(state.cartSheetOpen).toBe(false)
   })
 
   it('setCustomer, setDelivery, and setPaymentMethod store their form data', () => {
@@ -134,7 +153,7 @@ describe('submitTransaction thunk', () => {
   function primedStore() {
     return makeStore({
       source: TransactionSource.BUY_NOW,
-      cart: [{ productId: 'p1', name: 'Widget', priceInCents: 1000, imageUrl: 'x', quantity: 1 }],
+      cart: [{ productId: 'p1', name: 'Widget', priceInCents: 1000, imageUrl: 'x', stock: 5, quantity: 1 }],
       customer,
       delivery,
       cardToken: 'tok_1',

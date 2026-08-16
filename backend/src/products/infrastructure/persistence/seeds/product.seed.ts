@@ -1,61 +1,84 @@
 import { DataSource } from 'typeorm';
 import { ProductOrmEntity } from '../product.orm-entity';
 
-// TODO: imageUrl points at Unsplash for now — the S3/MinIO upload module
-// doesn't exist yet. Swap these for real uploaded product photos once that's built.
+// imageUrls point at Unsplash stock photography of loose roasted whole
+// beans — the AI-generated packaging labels were unreliable (every bag read
+// "Ethiopia"), and mixed subjects (latte art, brewing gear) didn't match a
+// whole-bean product. No S3/MinIO upload module exists yet.
+//
+// TODO: each product only has one real photo today, repeated 5x as a
+// placeholder gallery. Swap in the 5 generated shots (hero/close-up/angle/
+// flat-lay/lifestyle) per product once they exist.
+function placeholderGallery(url: string): string[] {
+  return Array.from({ length: 5 }, () => url);
+}
+
 const DUMMY_PRODUCTS: Omit<ProductOrmEntity, 'id'>[] = [
   {
-    name: 'Huila Dark Roast',
+    name: 'Yirgacheffe',
     description:
-      'Full-bodied single-origin from Huila, notes of dark chocolate and toasted nuts. 340g whole bean.',
-    priceInCents: 3490000,
-    stock: 24,
-    imageUrl:
-      'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=800&q=75&auto=format&fit=crop',
-  },
-  {
-    name: 'Yirgacheffe Light Roast',
-    description:
-      'Ethiopian single-origin, bright acidity with notes of jasmine and citrus. 340g whole bean.',
+      'Bright and floral with notes of jasmine, bergamot, and stone fruit. 340g whole bean.',
     priceInCents: 4290000,
-    stock: 16,
-    imageUrl:
-      'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=75&auto=format&fit=crop',
-  },
-  {
-    name: 'Espresso Blend',
-    description:
-      'House blend built for espresso — balanced, syrupy body with a cocoa finish. 500g whole bean.',
-    priceInCents: 3990000,
-    stock: 30,
-    imageUrl:
-      'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=800&q=75&auto=format&fit=crop',
-  },
-  {
-    name: 'Cold Brew Concentrate',
-    description: 'Slow-steeped 18 hours, ready to dilute. 1L bottle, serves up to 6.',
-    priceInCents: 2890000,
     stock: 12,
-    imageUrl:
-      'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=75&auto=format&fit=crop',
+    imageUrls: placeholderGallery(
+      'https://images.unsplash.com/photo-1580933073521-dc49ac0d4e6a?w=800&q=75&auto=format&fit=crop',
+    ),
+    tags: ['Ethiopia', 'Light roast'],
   },
   {
-    name: 'Decaf Colombia',
+    name: 'Huila Reserve',
     description:
-      'Swiss Water processed, all the flavor without the caffeine. 340g whole bean.',
+      'Balanced and sweet — caramel, red apple, and a clean cocoa finish. 340g whole bean.',
+    priceInCents: 3490000,
+    stock: 8,
+    imageUrls: placeholderGallery(
+      'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=800&q=75&auto=format&fit=crop',
+    ),
+    tags: ['Colombia', 'Medium roast'],
+  },
+  {
+    name: 'Mandheling',
+    description:
+      'Full-bodied and earthy with dark chocolate, cedar, and molasses. 340g whole bean.',
     priceInCents: 3690000,
-    stock: 0,
-    imageUrl:
-      'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=800&q=75&auto=format&fit=crop',
+    stock: 5,
+    imageUrls: placeholderGallery(
+      'https://images.unsplash.com/photo-1612487458970-564127ec86f5?w=800&q=75&auto=format&fit=crop',
+    ),
+    tags: ['Sumatra', 'Dark roast'],
   },
   {
-    name: 'Antigua French Press Grind',
+    name: 'Nyeri AA',
     description:
-      'Guatemalan beans ground coarse for French press, notes of caramel and spice. 340g.',
-    priceInCents: 3790000,
-    stock: 4,
-    imageUrl:
-      'https://images.unsplash.com/photo-1524350876685-274059332603?w=800&q=75&auto=format&fit=crop',
+      'Juicy and vibrant — blackcurrant, grapefruit, and brown sugar. 340g whole bean.',
+    priceInCents: 4690000,
+    stock: 3,
+    imageUrls: placeholderGallery(
+      'https://images.unsplash.com/photo-1606486544554-164d98da4889?w=800&q=75&auto=format&fit=crop',
+    ),
+    tags: ['Kenya', 'Light roast'],
+  },
+  {
+    name: 'Cerrado',
+    description:
+      'Smooth and nutty with toasted almond, milk chocolate, and honey. 340g whole bean.',
+    priceInCents: 3190000,
+    stock: 15,
+    imageUrls: placeholderGallery(
+      'https://images.unsplash.com/photo-1620820186187-fc32e79adb74?w=800&q=75&auto=format&fit=crop',
+    ),
+    tags: ['Brazil', 'Medium-Dark roast'],
+  },
+  {
+    name: 'Antigua',
+    description:
+      'Rich and rounded — baking spice, dark cherry, and roasted cocoa. 340g whole bean.',
+    priceInCents: 3890000,
+    stock: 0,
+    imageUrls: placeholderGallery(
+      'https://images.unsplash.com/photo-1675306408031-a9aad9f23308?w=800&q=75&auto=format&fit=crop',
+    ),
+    tags: ['Guatemala', 'Medium roast'],
   },
 ];
 

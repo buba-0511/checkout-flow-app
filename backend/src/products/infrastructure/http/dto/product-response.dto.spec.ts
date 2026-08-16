@@ -9,7 +9,8 @@ describe('ProductResponseDto.fromDomain', () => {
       'A widget.',
       1999,
       12,
-      'http://x/widget.jpg',
+      ['http://x/widget.jpg'],
+      [],
     );
 
     const dto = ProductResponseDto.fromDomain(product);
@@ -20,7 +21,8 @@ describe('ProductResponseDto.fromDomain', () => {
       description: 'A widget.',
       priceInCents: 1999,
       stock: 12,
-      imageUrl: 'http://x/widget.jpg',
+      imageUrls: ['http://x/widget.jpg'],
+      tags: [],
     });
   });
 });

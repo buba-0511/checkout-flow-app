@@ -13,7 +13,8 @@ const product: Product = {
   description: 'Full-bodied, notes of chocolate and caramel.',
   priceInCents: 1899,
   stock: 20,
-  imageUrl: 'http://x/dark-roast.jpg',
+  imageUrls: ['http://x/dark-roast.jpg'],
+  tags: [],
 }
 
 afterEach(() => {

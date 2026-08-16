@@ -15,6 +15,9 @@ export interface CartLine {
   name: string;
   priceInCents: number;
   imageUrl: string;
+  // Snapshotted at add-time, same as priceInCents — the stepper's max bound
+  // in the cart sheet doesn't need a fresh product fetch.
+  stock: number;
   quantity: number;
 }
 
@@ -27,6 +30,8 @@ export interface CheckoutState {
   step: CheckoutStep;
   source: TransactionSource | null;
   cart: CartLine[];
+  // Desktop nav cart icon / mobile floating bar both open this same sheet.
+  cartSheetOpen: boolean;
   customer: CustomerInput | null;
   delivery: DeliveryInput | null;
   cardToken: string | null;
@@ -41,6 +46,7 @@ export const initialState: CheckoutState = {
   step: 'details',
   source: null,
   cart: [],
+  cartSheetOpen: false,
   customer: null,
   delivery: null,
   cardToken: null,
@@ -120,12 +126,14 @@ const checkoutSlice = createSlice({
     startBuyNow(state, action: PayloadAction<{ product: Product; quantity: number }>) {
       const { product, quantity } = action.payload;
       state.source = TransactionSource.BUY_NOW;
+      state.cartSheetOpen = false;
       state.cart = [
         {
           productId: product.id,
           name: product.name,
           priceInCents: product.priceInCents,
-          imageUrl: product.imageUrl,
+          imageUrl: product.imageUrls[0],
+          stock: product.stock,
           quantity,
         },
       ];
@@ -137,12 +145,14 @@ const checkoutSlice = createSlice({
       const existing = state.cart.find((line) => line.productId === product.id);
       if (existing) {
         existing.quantity += quantity;
+        existing.stock = product.stock;
       } else {
         state.cart.push({
           productId: product.id,
           name: product.name,
           priceInCents: product.priceInCents,
-          imageUrl: product.imageUrl,
+          imageUrl: product.imageUrls[0],
+          stock: product.stock,
           quantity,
         });
       }
@@ -158,8 +168,15 @@ const checkoutSlice = createSlice({
     },
     startCartCheckout(state) {
       state.source = TransactionSource.CART;
+      state.cartSheetOpen = false;
       state.view = 'checkout';
       state.step = 'details';
+    },
+    openCartSheet(state) {
+      state.cartSheetOpen = true;
+    },
+    closeCartSheet(state) {
+      state.cartSheetOpen = false;
     },
     setCustomer(state, action: PayloadAction<CustomerInput>) {
       state.customer = action.payload;
@@ -211,6 +228,8 @@ export const {
   updateCartQuantity,
   removeFromCart,
   startCartCheckout,
+  openCartSheet,
+  closeCartSheet,
   setCustomer,
   setDelivery,
   setPaymentMethod,

@@ -1,5 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
+import type { ReactElement } from 'react'
 import { ProductCard } from './ProductCard'
 import type { Product } from '../../api/resources'
 
@@ -9,12 +11,17 @@ const product: Product = {
   description: 'Full-bodied, notes of chocolate and caramel.',
   priceInCents: 1899900,
   stock: 12,
-  imageUrl: 'http://x/dark-roast.jpg',
+  imageUrls: ['http://x/dark-roast.jpg'],
+  tags: ['Colombia', 'Medium roast'],
+}
+
+function renderCard(ui: ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>)
 }
 
 describe('ProductCard', () => {
   it('renders the product name, description, formatted price, and stock', () => {
-    render(<ProductCard product={product} onBuyNow={jest.fn()} onAddToCart={jest.fn()} />)
+    renderCard(<ProductCard product={product} onBuyNow={jest.fn()} onAddToCart={jest.fn()} />)
 
     expect(screen.getByText('Colombian Dark Roast')).toBeInTheDocument()
     expect(screen.getByText(/Full-bodied/)).toBeInTheDocument()
@@ -22,9 +29,33 @@ describe('ProductCard', () => {
     expect(screen.getByText('12 left')).toBeInTheDocument()
   })
 
+  it('links the product name and image to its detail page', () => {
+    renderCard(<ProductCard product={product} onBuyNow={jest.fn()} onAddToCart={jest.fn()} />)
+
+    const links = screen.getAllByRole('link')
+    expect(links).toHaveLength(1)
+    expect(links[0]).toHaveAttribute('href', '/products/p1')
+    expect(links[0]).toContainElement(screen.getByRole('img', { name: product.name }))
+    expect(links[0]).toContainElement(screen.getByText('Colombian Dark Roast'))
+  })
+
+  it('renders the product tags as a single pill on the image', () => {
+    renderCard(<ProductCard product={product} onBuyNow={jest.fn()} onAddToCart={jest.fn()} />)
+
+    expect(screen.getByText('Colombia · Medium roast')).toBeInTheDocument()
+  })
+
+  it('renders no tag pill when the product has no tags', () => {
+    renderCard(
+      <ProductCard product={{ ...product, tags: [] }} onBuyNow={jest.fn()} onAddToCart={jest.fn()} />,
+    )
+
+    expect(screen.queryByText(/·/)).not.toBeInTheDocument()
+  })
+
   it('calls onBuyNow with the product and a default quantity of 1 when "Buy now" is clicked', async () => {
     const onBuyNow = jest.fn()
-    render(<ProductCard product={product} onBuyNow={onBuyNow} onAddToCart={jest.fn()} />)
+    renderCard(<ProductCard product={product} onBuyNow={onBuyNow} onAddToCart={jest.fn()} />)
 
     await userEvent.click(screen.getByRole('button', { name: /buy now/i }))
 
@@ -33,7 +64,7 @@ describe('ProductCard', () => {
 
   it('calls onAddToCart with the product and a default quantity of 1 when "Add" is clicked', async () => {
     const onAddToCart = jest.fn()
-    render(<ProductCard product={product} onBuyNow={jest.fn()} onAddToCart={onAddToCart} />)
+    renderCard(<ProductCard product={product} onBuyNow={jest.fn()} onAddToCart={onAddToCart} />)
 
     await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
 
@@ -41,7 +72,7 @@ describe('ProductCard', () => {
   })
 
   it('increments and decrements the quantity, clamped between 1 and the available stock', async () => {
-    render(
+    renderCard(
       <ProductCard product={{ ...product, stock: 2 }} onBuyNow={jest.fn()} onAddToCart={jest.fn()} />,
     )
 
@@ -62,7 +93,7 @@ describe('ProductCard', () => {
   it('passes the selected quantity through to onAddToCart and onBuyNow', async () => {
     const onAddToCart = jest.fn()
     const onBuyNow = jest.fn()
-    render(
+    renderCard(
       <ProductCard product={{ ...product, stock: 5 }} onBuyNow={onBuyNow} onAddToCart={onAddToCart} />,
     )
 
@@ -76,14 +107,16 @@ describe('ProductCard', () => {
   })
 
   it('shows a low-stock badge when stock is at or below the threshold', () => {
-    render(<ProductCard product={{ ...product, stock: 3 }} onBuyNow={jest.fn()} onAddToCart={jest.fn()} />)
+    renderCard(
+      <ProductCard product={{ ...product, stock: 3 }} onBuyNow={jest.fn()} onAddToCart={jest.fn()} />,
+    )
 
     const badge = screen.getByText('3 left')
     expect(badge).toHaveClass('badge-pending')
   })
 
-  it('shows "Out of stock" and disables both actions when stock is zero', () => {
-    render(
+  it('dims the image and stamps a centered "Out of stock" label instead of a corner badge', () => {
+    renderCard(
       <ProductCard
         product={{ ...product, stock: 0 }}
         onBuyNow={jest.fn()}
@@ -91,7 +124,22 @@ describe('ProductCard', () => {
       />,
     )
 
-    expect(screen.getByText('Out of stock')).toBeInTheDocument()
+    const label = screen.getByText('Out of stock')
+    expect(label).not.toHaveClass('badge-declined')
+    expect(screen.getByRole('img', { name: product.name })).toHaveClass('grayscale')
+  })
+
+  it('freezes the quantity stepper and disables both actions when stock is zero', () => {
+    renderCard(
+      <ProductCard
+        product={{ ...product, stock: 0 }}
+        onBuyNow={jest.fn()}
+        onAddToCart={jest.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: /increase quantity/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /decrease quantity/i })).toBeDisabled()
     expect(screen.getByRole('button', { name: /buy now/i })).toBeDisabled()
     expect(screen.getByRole('button', { name: /^add$/i })).toBeDisabled()
   })

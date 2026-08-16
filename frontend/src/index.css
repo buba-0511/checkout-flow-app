@@ -24,7 +24,7 @@
 }
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 html,
@@ -43,13 +43,6 @@ h2,
 h3,
 .font-heading {
   font-family: var(--font-serif);
-}
-
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: var(--color-neutral);
-    color: var(--color-tertiary);
-  }
 }
 
 /* Tailwind v4 can't @apply one @layer components class from another, so

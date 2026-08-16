@@ -7,7 +7,8 @@ function makeProduct(stock: number): Product {
     'A widget.',
     1000,
     stock,
-    'http://x/img.jpg',
+    ['http://x/img.jpg'],
+    [],
   );
 }
 

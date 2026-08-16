@@ -22,7 +22,8 @@ describe('GetProductByIdUseCase', () => {
       'A widget.',
       1000,
       10,
-      'http://x/1.jpg',
+      ['http://x/1.jpg'],
+      [],
     );
     repository.findById.mockResolvedValue(product);
 

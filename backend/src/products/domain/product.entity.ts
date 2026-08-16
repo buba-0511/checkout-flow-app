@@ -8,7 +8,11 @@ export class Product {
     public readonly description: string,
     public readonly priceInCents: number,
     private _stock: number,
-    public readonly imageUrl: string,
+    // Ordered gallery — imageUrls[0] is the primary/catalog-card image.
+    public readonly imageUrls: string[],
+    // Freeform, category-agnostic labels (e.g. origin, roast) — Product
+    // itself stays generic, not coupled to any one kind of catalog.
+    public readonly tags: string[],
   ) {}
 
   get stock(): number {
