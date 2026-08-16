@@ -70,12 +70,14 @@ Frontend, backend, PostgreSQL, and MinIO (a local S3-compatible store standing i
 
 ### Production topology — AWS
 
-`TODO`: domain not finalized yet. Diagrams and examples below use placeholder
-names (`checkout.example.com` / `api.checkout.example.com`) until deployment.
+No custom domain — each CloudFront distribution serves on its own default `*.cloudfront.net` hostname, which already carries a fully valid, trusted certificate with zero ACM/Route 53 setup. A custom domain would only have bought a nicer-looking URL, at the cost of a Route 53 hosted zone, ACM DNS validation, and delegating a subdomain of a personal domain.
 
-![Production AWS architecture: Route 53 and ACM feeding two CloudFront distributions (app and api), S3 buckets for the static site and product images, ECS on Fargate and RDS inside a VPC split into public and private subnets, with an ALB and NAT Gateway in the public subnet, and both the browser and the backend reaching the external payment gateway sandbox API](docs/diagrams/production-aws.svg)
+- Frontend: https://d1vdwx1cui511h.cloudfront.net
+- API: https://d3m7few5u96zzk.cloudfront.net
 
-`checkout.example.com` and `api.checkout.example.com` are two separate CloudFront distributions (own ACM certs, both issued in `us-east-1`) — the second one sits in front of the ALB purely to get free HTTPS at the edge without owning more infrastructure. The ALB listens on plain HTTP (CloudFront→ALB stays inside AWS's network, so no extra certificate is needed there); the browser-facing hop is HTTPS end to end via CloudFront regardless. ECS (Fargate) and RDS live in the VPC's private subnet, single-AZ; only the ALB and NAT Gateway sit in the public one.
+![Production AWS architecture: two CloudFront distributions (app and api) on their default domains, an S3 bucket for the static site, ECS on Fargate and RDS inside a VPC split into public and private subnets, with an ALB and NAT Gateway in the public subnet, ECR receiving pushed images from CI/CD, Secrets Manager holding DB and payment-gateway credentials, and the browser and backend both reaching the external Wompi sandbox API — including its webhook calling back into the api CloudFront distribution](docs/diagrams/production-aws.svg)
+
+The api distribution sits in front of the ALB purely to get free HTTPS at the edge without owning more infrastructure — it also proxies the websocket the backend pushes live transaction status updates over, forwarding the `Upgrade`/`Connection` headers via CloudFront's managed `AllViewer` origin request policy. The ALB itself listens on plain HTTP (CloudFront→ALB stays inside AWS's network, so no extra certificate is needed there); the browser-facing hop is HTTPS end to end via CloudFront regardless. ECS (Fargate) and RDS live in the VPC's private subnet, single-AZ; only the ALB and NAT Gateway sit in the public one. The ALB's security group only accepts traffic from CloudFront's managed prefix list, not the open internet.
 
 ### Why ECS/Fargate instead of App Runner
 
@@ -155,7 +157,7 @@ No card data (PAN, CVV, expiry) is ever persisted — card details are handled d
 Swagger UI is wired up via `@nestjs/swagger` (`backend/src/main.ts`) and served at `/api/docs`:
 
 - Local: https://localhost:3000/api/docs
-- Production: `TODO` — add the live `api.checkout.example.com/api/docs` URL once deployed.
+- Production: https://d3m7few5u96zzk.cloudfront.net/api/docs (infra is live; pending the first image push via `deploy-backend.yml`)
 
 Required resources: `stock`, `transactions`, `customers`, `deliveries` — each exposed as its own controller/endpoint group, not flattened into a generic products CRUD. `TODO`: decorate controllers/DTOs with `@ApiTags`/`@ApiProperty` once they're implemented, so the generated spec is actually descriptive.
 
@@ -254,4 +256,7 @@ cd frontend && npm run test:cov
 
 ## Deployment
 
-`TODO`: deployed API URL and frontend URL (`checkout.example.com` / `api.checkout.example.com`, once ECS/Fargate and CloudFront are live).
+- Frontend: https://d1vdwx1cui511h.cloudfront.net
+- API: https://d3m7few5u96zzk.cloudfront.net
+
+Infrastructure (VPC, RDS, ECS/Fargate, ALB, both CloudFront distributions) is applied and live. `deploy-backend.yml`/`deploy-frontend.yml` push the actual app to it on a merge into `prod` — see `infrastructure/` for the Terraform and the workflow files under `.github/workflows/` for the deploy pipelines themselves.
