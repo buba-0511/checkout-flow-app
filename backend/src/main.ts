@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
@@ -16,6 +17,15 @@ async function bootstrap() {
       : undefined;
 
   const app = await NestFactory.create(AppModule, { httpsOptions });
+
+  // CSP off: Swagger UI's inline scripts/styles conflict with helmet's
+  // default policy — every other header (HSTS, X-Frame-Options, etc.) stays on.
+  app.use(helmet({ contentSecurityPolicy: false }));
+  app.enableCors({
+    origin: (process.env.CORS_ORIGIN ?? 'https://localhost:5173')
+      .split(',')
+      .map((origin) => origin.trim()),
+  });
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalInterceptors(new ResponseInterceptor());

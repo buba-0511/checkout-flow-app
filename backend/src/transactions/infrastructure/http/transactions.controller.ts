@@ -7,6 +7,7 @@ import {
   Post,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { unwrap } from '../../../common/errors/api-exception';
 import { CreateTransactionUseCase } from '../../application/use-cases/create-transaction.use-case';
@@ -33,6 +34,7 @@ export class TransactionsController {
   ) {}
 
   @Post()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({
     summary:
       'Create a checkout transaction: resolves/creates the customer, creates the delivery, decrements stock, and sends the transaction to the payment gateway.',

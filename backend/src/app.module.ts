@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { TerminusModule } from '@nestjs/terminus';
 import { ProductsModule } from './products/products.module';
@@ -16,6 +18,8 @@ import { TransactionsModule } from './transactions/transactions.module';
       autoLoadEntities: true,
       synchronize: process.env.NODE_ENV !== 'production',
     }),
+    // Global default: 100 requests/minute per IP.
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     TerminusModule,
     CommonModule,
     ProductsModule,
@@ -24,5 +28,6 @@ import { TransactionsModule } from './transactions/transactions.module';
     TransactionsModule,
   ],
   controllers: [AppController],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
