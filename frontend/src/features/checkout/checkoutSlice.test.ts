@@ -14,7 +14,8 @@ import checkoutReducer, {
   goToStep,
   resetCheckout,
   submitTransaction,
-  pollTransactionUntilResolved,
+  syncTransactionStatus,
+  transactionStatusUpdated,
   type CheckoutState,
 } from './checkoutSlice'
 import * as transactionsApi from '../../api/transactions/transactions'
@@ -130,10 +131,15 @@ describe('checkoutSlice reducers', () => {
   it('setCustomer, setDelivery, and setPaymentMethod store their form data', () => {
     let state = checkoutReducer(initialState, setCustomer(customer))
     state = checkoutReducer(state, setDelivery(delivery))
-    state = checkoutReducer(state, setPaymentMethod({ cardToken: 'tok_1', installments: 3 }))
+    state = checkoutReducer(
+      state,
+      setPaymentMethod({ cardToken: 'tok_1', cardBrand: 'VISA', cardLastFour: '4242', installments: 3 }),
+    )
     expect(state.customer).toEqual(customer)
     expect(state.delivery).toEqual(delivery)
     expect(state.cardToken).toBe('tok_1')
+    expect(state.cardBrand).toBe('VISA')
+    expect(state.cardLastFour).toBe('4242')
     expect(state.installments).toBe(3)
   })
 
@@ -171,12 +177,8 @@ describe('submitTransaction thunk', () => {
     expect(transactionsApi.createTransaction).not.toHaveBeenCalled()
   })
 
-  it('creates the transaction, moves to the result step, and starts polling on success', async () => {
+  it('creates the transaction, moves to the result step, and awaits the webhook-driven result', async () => {
     jest.mocked(transactionsApi.createTransaction).mockResolvedValue(transaction)
-    jest.mocked(transactionsApi.getTransaction).mockResolvedValue({
-      ...transaction,
-      status: TransactionStatus.APPROVED,
-    })
     const store = primedStore()
 
     await store.dispatch(submitTransaction())
@@ -190,6 +192,7 @@ describe('submitTransaction thunk', () => {
     })
     expect(store.getState().checkout.step).toBe('result')
     expect(store.getState().checkout.transaction?.id).toBe('t1')
+    expect(store.getState().checkout.status).toBe('awaitingResult')
   })
 
   it('sets status to error when the API call fails', async () => {
@@ -205,45 +208,51 @@ describe('submitTransaction thunk', () => {
   })
 })
 
-describe('pollTransactionUntilResolved thunk', () => {
-  it('resolves immediately when the transaction is no longer PENDING', async () => {
+describe('syncTransactionStatus thunk', () => {
+  it('applies a resolved snapshot and clears the awaiting state', async () => {
     jest.mocked(transactionsApi.getTransaction).mockResolvedValue({
       ...transaction,
       status: TransactionStatus.APPROVED,
     })
-    const store = makeStore()
+    const store = makeStore({ status: 'awaitingResult' })
 
-    await store.dispatch(pollTransactionUntilResolved('t1'))
+    await store.dispatch(syncTransactionStatus('t1'))
 
     expect(transactionsApi.getTransaction).toHaveBeenCalledTimes(1)
     expect(store.getState().checkout.transaction?.status).toBe(TransactionStatus.APPROVED)
     expect(store.getState().checkout.status).toBe('idle')
   })
 
-  it('polls again while still PENDING, then stops once resolved', async () => {
-    jest.useFakeTimers()
-    jest
-      .mocked(transactionsApi.getTransaction)
-      .mockResolvedValueOnce({ ...transaction, status: TransactionStatus.PENDING })
-      .mockResolvedValueOnce({ ...transaction, status: TransactionStatus.DECLINED })
-    const store = makeStore()
+  it('keeps awaiting when the snapshot is still PENDING (the socket push hasn\'t landed yet)', async () => {
+    jest.mocked(transactionsApi.getTransaction).mockResolvedValue({
+      ...transaction,
+      status: TransactionStatus.PENDING,
+    })
+    const store = makeStore({ status: 'awaitingResult' })
 
-    const dispatched = store.dispatch(pollTransactionUntilResolved('t1'))
-    await jest.advanceTimersByTimeAsync(2000)
-    await dispatched
+    await store.dispatch(syncTransactionStatus('t1'))
 
-    expect(transactionsApi.getTransaction).toHaveBeenCalledTimes(2)
-    expect(store.getState().checkout.transaction?.status).toBe(TransactionStatus.DECLINED)
-    jest.useRealTimers()
+    expect(store.getState().checkout.status).toBe('awaitingResult')
   })
 
   it('sets status to error when the API call fails', async () => {
     jest.mocked(transactionsApi.getTransaction).mockRejectedValue({ code: 'NETWORK_ERROR', message: 'x' })
     const store = makeStore()
 
-    await store.dispatch(pollTransactionUntilResolved('t1'))
+    await store.dispatch(syncTransactionStatus('t1'))
 
     expect(store.getState().checkout.status).toBe('error')
     expect(store.getState().checkout.error?.code).toBe('NETWORK_ERROR')
+  })
+})
+
+describe('transactionStatusUpdated reducer', () => {
+  it('applies a resolved push and clears the awaiting state', () => {
+    const state = checkoutReducer(
+      { ...initialState, status: 'awaitingResult' },
+      transactionStatusUpdated({ ...transaction, status: TransactionStatus.APPROVED }),
+    )
+    expect(state.transaction?.status).toBe(TransactionStatus.APPROVED)
+    expect(state.status).toBe('idle')
   })
 })

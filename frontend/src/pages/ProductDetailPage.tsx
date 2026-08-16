@@ -176,7 +176,7 @@ export function ProductDetailPage() {
               disabled={outOfStock}
               onClick={() => dispatch(startBuyNow({ product, quantity }))}
             >
-              Buy now
+              Pay with credit card
             </Button>
           </div>
         </div>

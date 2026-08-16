@@ -90,7 +90,7 @@ describe('ProductDetailPage', () => {
       },
     ])
 
-    await userEvent.click(screen.getByRole('button', { name: /buy now/i }))
+    await userEvent.click(screen.getByRole('button', { name: /pay with credit card/i }))
     expect(store.getState().checkout.view).toBe('checkout')
     expect(store.getState().checkout.source).toBe('BUY_NOW')
   })
@@ -160,6 +160,6 @@ describe('ProductDetailPage', () => {
     expect(screen.getAllByText('Out of stock')).toHaveLength(1)
     expect(screen.getByRole('button', { name: /increase quantity/i })).toBeDisabled()
     expect(screen.getByRole('button', { name: /add to cart/i })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /buy now/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /pay with credit card/i })).toBeDisabled()
   })
 })
