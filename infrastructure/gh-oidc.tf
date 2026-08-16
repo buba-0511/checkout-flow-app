@@ -35,8 +35,8 @@ data "aws_iam_policy_document" "github_actions_assume" {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
-        "repo:${var.github_repo}:pull_request",
-        "repo:${var.github_repo}:ref:refs/heads/prod",
+        "repo:${split("/", var.github_repo)[0]}*/${split("/", var.github_repo)[1]}*:pull_request",
+        "repo:${split("/", var.github_repo)[0]}*/${split("/", var.github_repo)[1]}*:ref:refs/heads/prod",
       ]
     }
   }
@@ -57,7 +57,12 @@ resource "aws_iam_role" "github_actions" {
 # follow-up, not something this pass pretends to have already done.
 locals {
   github_actions_managed_policies = [
-    "arn:aws:iam::aws:policy/AmazonVPCFullAccess",
+    # Superset of AmazonVPCFullAccess — also covers reading AWS-managed
+    # prefix lists (needed by the ALB security group's CloudFront-only
+    # ingress rule), which VPCFullAccess alone does not grant.
+    "arn:aws:iam::aws:policy/AmazonEC2FullAccess",
+    "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess",
+    "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess",
     "arn:aws:iam::aws:policy/AmazonRDSFullAccess",
     "arn:aws:iam::aws:policy/AmazonECS_FullAccess",
     "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess",

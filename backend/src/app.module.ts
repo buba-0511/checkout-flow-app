@@ -17,7 +17,8 @@ import { TransactionsModule } from './transactions/transactions.module';
       type: 'postgres',
       url: process.env.DATABASE_URL,
       autoLoadEntities: true,
-      synchronize: process.env.NODE_ENV !== 'production',
+      synchronize: true,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
     }),
     // Global default: 100 requests/minute per IP.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
