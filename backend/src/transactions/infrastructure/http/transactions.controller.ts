@@ -41,7 +41,9 @@ export class TransactionsController {
   async create(
     @Body() dto: CreateTransactionDto,
   ): Promise<TransactionResponseDto> {
-    const transaction = unwrap(await this.createTransactionUseCase.execute(dto));
+    const transaction = unwrap(
+      await this.createTransactionUseCase.execute(dto),
+    );
     return TransactionResponseDto.fromDomain(transaction);
   }
 
@@ -53,7 +55,9 @@ export class TransactionsController {
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<TransactionResponseDto> {
-    const transaction = unwrap(await this.getTransactionByIdUseCase.execute(id));
+    const transaction = unwrap(
+      await this.getTransactionByIdUseCase.execute(id),
+    );
     return TransactionResponseDto.fromDomain(transaction);
   }
 

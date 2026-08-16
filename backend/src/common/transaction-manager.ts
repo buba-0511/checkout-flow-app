@@ -1,9 +1,7 @@
 import { Result } from './result';
 
-// Opaque marker — carries no TypeORM types into ports/use cases. Only the
-// TypeORM adapter (typeorm-transaction-manager.ts) and each
-// typeorm-*.repository.ts know what's actually inside one.
-export interface TransactionContext {}
+// Opaque marker — carries no TypeORM types into ports/use cases.
+export type TransactionContext = object;
 
 // A port so a use case that writes across multiple repositories (e.g.
 // CreateTransactionUseCase: customer, delivery, transaction, stock) can run

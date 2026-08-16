@@ -27,7 +27,13 @@ describe('TransactionResponseDto.fromDomain', () => {
     expect(dto.status).toBe(transaction.status);
     expect(dto.source).toBe(TransactionSource.CART);
     expect(dto.items).toEqual([
-      { id: 'i1', productId: 'p1', quantity: 2, unitPriceInCents: 1000, subtotalInCents: 2000 },
+      {
+        id: 'i1',
+        productId: 'p1',
+        quantity: 2,
+        unitPriceInCents: 1000,
+        subtotalInCents: 2000,
+      },
     ]);
     expect(dto.subtotalInCents).toBe(2000);
     expect(dto.baseFeeInCents).toBe(300);

@@ -11,7 +11,9 @@ import { TransactionMapper } from './transaction.mapper';
 import { TransactionOrmEntity } from './transaction.orm-entity';
 import { TypeOrmTransactionRepository } from './typeorm-transaction.repository';
 
-function createMockOrmRepo(): jest.Mocked<Pick<Repository<TransactionOrmEntity>, 'findOne' | 'save'>> {
+function createMockOrmRepo(): jest.Mocked<
+  Pick<Repository<TransactionOrmEntity>, 'findOne' | 'save'>
+> {
   return {
     findOne: jest.fn(),
     save: jest.fn(),
@@ -115,7 +117,9 @@ describe('TypeOrmTransactionRepository', () => {
 
       await repository.save(transaction);
 
-      expect(ormRepo.save).toHaveBeenCalledWith(TransactionMapper.toOrm(transaction));
+      expect(ormRepo.save).toHaveBeenCalledWith(
+        TransactionMapper.toOrm(transaction),
+      );
     });
 
     it('saves through the transactional EntityManager when a ctx is passed', async () => {
@@ -130,7 +134,9 @@ describe('TypeOrmTransactionRepository', () => {
       await repository.save(transaction, ctx);
 
       expect(manager.getRepository).toHaveBeenCalledWith(TransactionOrmEntity);
-      expect(txRepo.save).toHaveBeenCalledWith(TransactionMapper.toOrm(transaction));
+      expect(txRepo.save).toHaveBeenCalledWith(
+        TransactionMapper.toOrm(transaction),
+      );
       expect(ormRepo.save).not.toHaveBeenCalled();
     });
   });

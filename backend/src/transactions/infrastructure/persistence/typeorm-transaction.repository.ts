@@ -31,9 +31,14 @@ export class TypeOrmTransactionRepository implements TransactionRepository {
     return entity ? TransactionMapper.toDomain(entity) : null;
   }
 
-  async save(transaction: Transaction, ctx?: TransactionContext): Promise<void> {
+  async save(
+    transaction: Transaction,
+    ctx?: TransactionContext,
+  ): Promise<void> {
     const manager = TypeOrmTransactionContext.managerOf(ctx);
-    const repo = manager ? manager.getRepository(TransactionOrmEntity) : this.repo;
+    const repo = manager
+      ? manager.getRepository(TransactionOrmEntity)
+      : this.repo;
     await repo.save(TransactionMapper.toOrm(transaction));
   }
 }

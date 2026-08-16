@@ -1,7 +1,4 @@
-import {
-  Transaction,
-  TransactionItem,
-} from '../../domain/transaction.entity';
+import { Transaction, TransactionItem } from '../../domain/transaction.entity';
 import { CustomerOrmEntity } from '../../../customers/infrastructure/persistence/customer.orm-entity';
 import { DeliveryOrmEntity } from '../../../deliveries/infrastructure/persistence/delivery.orm-entity';
 import { ProductOrmEntity } from '../../../products/infrastructure/persistence/product.orm-entity';

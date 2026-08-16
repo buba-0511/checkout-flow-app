@@ -74,42 +74,45 @@ export class CreateTransactionUseCase {
   async execute(
     input: CreateTransactionInput,
   ): Promise<Result<Transaction, DomainError>> {
-    const committed = await runInTransaction(this.transactionManager, async (ctx) => {
-      const customerResult = await this.findOrCreateCustomerUseCase.execute(
-        input.customer,
-        ctx,
-      );
-      if (customerResult.isErr()) return Result.err(customerResult.error);
-      const customer = customerResult.value;
+    const committed = await runInTransaction(
+      this.transactionManager,
+      async (ctx) => {
+        const customerResult = await this.findOrCreateCustomerUseCase.execute(
+          input.customer,
+          ctx,
+        );
+        if (customerResult.isErr()) return Result.err(customerResult.error);
+        const customer = customerResult.value;
 
-      const deliveryResult = await this.createDeliveryUseCase.execute(
-        { customerId: customer.id, ...input.delivery },
-        ctx,
-      );
-      if (deliveryResult.isErr()) return Result.err(deliveryResult.error);
-      const delivery = deliveryResult.value;
+        const deliveryResult = await this.createDeliveryUseCase.execute(
+          { customerId: customer.id, ...input.delivery },
+          ctx,
+        );
+        if (deliveryResult.isErr()) return Result.err(deliveryResult.error);
+        const delivery = deliveryResult.value;
 
-      const stockResult = await this.decreaseStockUseCase.execute(
-        input.items,
-        ctx,
-      );
-      if (stockResult.isErr()) return Result.err(stockResult.error);
-      const products = stockResult.value;
+        const stockResult = await this.decreaseStockUseCase.execute(
+          input.items,
+          ctx,
+        );
+        if (stockResult.isErr()) return Result.err(stockResult.error);
+        const products = stockResult.value;
 
-      const transaction = Transaction.create({
-        id: randomUUID(),
-        reference: randomUUID(),
-        customerId: customer.id,
-        deliveryId: delivery.id,
-        source: input.source,
-        items: this.buildItems(input.items, products),
-        baseFeeInCents: BASE_FEE_IN_CENTS,
-        deliveryFeeInCents: DELIVERY_FEE_IN_CENTS,
-      });
-      await this.transactionRepository.save(transaction, ctx);
+        const transaction = Transaction.create({
+          id: randomUUID(),
+          reference: randomUUID(),
+          customerId: customer.id,
+          deliveryId: delivery.id,
+          source: input.source,
+          items: this.buildItems(input.items, products),
+          baseFeeInCents: BASE_FEE_IN_CENTS,
+          deliveryFeeInCents: DELIVERY_FEE_IN_CENTS,
+        });
+        await this.transactionRepository.save(transaction, ctx);
 
-      return Result.ok({ transaction, customerEmail: customer.email });
-    });
+        return Result.ok({ transaction, customerEmail: customer.email });
+      },
+    );
 
     if (committed.isErr()) {
       return Result.err(committed.error);
@@ -125,7 +128,9 @@ export class CreateTransactionUseCase {
         cardToken: input.paymentMethod.cardToken,
         installments: input.paymentMethod.installments,
       });
-      transaction.assignPaymentGatewayReference(gatewayOutput.gatewayTransactionId);
+      transaction.assignPaymentGatewayReference(
+        gatewayOutput.gatewayTransactionId,
+      );
       await this.transactionRepository.save(transaction);
     } catch (err) {
       // DB work above already committed — this row stays PENDING, no gatewayTransactionId.

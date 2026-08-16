@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { unwrap } from '../../../common/errors/api-exception';
 import { CreateDeliveryUseCase } from '../../application/use-cases/create-delivery.use-case';
@@ -17,9 +24,7 @@ export class DeliveriesController {
   @Post()
   @ApiOperation({ summary: 'Create a delivery for a customer.' })
   @ApiResponse({ status: 201, type: DeliveryResponseDto })
-  async create(
-    @Body() dto: CreateDeliveryDto,
-  ): Promise<DeliveryResponseDto> {
+  async create(@Body() dto: CreateDeliveryDto): Promise<DeliveryResponseDto> {
     const delivery = unwrap(await this.createDeliveryUseCase.execute(dto));
     return DeliveryResponseDto.fromDomain(delivery);
   }

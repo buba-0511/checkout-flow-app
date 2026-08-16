@@ -15,7 +15,10 @@ export class TypeOrmCustomerRepository implements CustomerRepository {
     private readonly repo: Repository<CustomerOrmEntity>,
   ) {}
 
-  async findById(id: string, ctx?: TransactionContext): Promise<Customer | null> {
+  async findById(
+    id: string,
+    ctx?: TransactionContext,
+  ): Promise<Customer | null> {
     const entity = await this.repoFor(ctx).findOneBy({ id });
     return entity ? CustomerMapper.toDomain(entity) : null;
   }

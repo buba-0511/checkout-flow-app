@@ -85,7 +85,11 @@ describe('TransactionsController', () => {
       legalId: '1234567890',
       legalIdType: LegalIdType.CC,
     },
-    delivery: { address: 'Calle 123 #45-67', city: 'Bogotá', region: 'Cundinamarca' },
+    delivery: {
+      address: 'Calle 123 #45-67',
+      city: 'Bogotá',
+      region: 'Cundinamarca',
+    },
     items: [{ productId: 'p1', quantity: 1 }],
     source: TransactionSource.CART,
     paymentMethod: { cardToken: 'tok_test_123', installments: 1 },
@@ -94,7 +98,9 @@ describe('TransactionsController', () => {
   describe('create', () => {
     it('maps the resulting transaction to a response DTO', async () => {
       const { controller, createTransactionUseCase } = setup();
-      createTransactionUseCase.execute.mockResolvedValue(Result.ok(makeTransaction()));
+      createTransactionUseCase.execute.mockResolvedValue(
+        Result.ok(makeTransaction()),
+      );
 
       const result = await controller.create(dto);
 
@@ -106,7 +112,9 @@ describe('TransactionsController', () => {
   describe('findOne', () => {
     it('returns the mapped transaction when found', async () => {
       const { controller, getTransactionByIdUseCase } = setup();
-      getTransactionByIdUseCase.execute.mockResolvedValue(Result.ok(makeTransaction()));
+      getTransactionByIdUseCase.execute.mockResolvedValue(
+        Result.ok(makeTransaction()),
+      );
 
       const result = await controller.findOne('t1');
 
@@ -118,20 +126,31 @@ describe('TransactionsController', () => {
       const { controller, getTransactionByIdUseCase } = setup();
       getTransactionByIdUseCase.execute.mockResolvedValue(
         Result.err(
-          new DomainError(ErrorCode.TRANSACTION_NOT_FOUND, 'Transaction "missing" was not found.'),
+          new DomainError(
+            ErrorCode.TRANSACTION_NOT_FOUND,
+            'Transaction "missing" was not found.',
+          ),
         ),
       );
 
-      await expect(controller.findOne('missing')).rejects.toBeInstanceOf(ApiException);
+      await expect(controller.findOne('missing')).rejects.toBeInstanceOf(
+        ApiException,
+      );
     });
   });
 
   describe('handleWebhook', () => {
     it('verifies the signature, then applies the status update and returns the mapped transaction', async () => {
-      const { controller, updateTransactionStatusUseCase, webhookSignatureVerifier } = setup();
+      const {
+        controller,
+        updateTransactionStatusUseCase,
+        webhookSignatureVerifier,
+      } = setup();
       const transaction = makeTransaction();
       transaction.resolve(TransactionStatus.APPROVED);
-      updateTransactionStatusUseCase.execute.mockResolvedValue(Result.ok(transaction));
+      updateTransactionStatusUseCase.execute.mockResolvedValue(
+        Result.ok(transaction),
+      );
       const webhookDto = makeWebhookDto();
 
       const result = await controller.handleWebhook(webhookDto);
@@ -141,11 +160,17 @@ describe('TransactionsController', () => {
         reference: 'ref-1',
         status: TransactionStatus.APPROVED,
       });
-      expect((result as { status: TransactionStatus }).status).toBe(TransactionStatus.APPROVED);
+      expect((result as { status: TransactionStatus }).status).toBe(
+        TransactionStatus.APPROVED,
+      );
     });
 
     it('throws Unauthorized and never calls the use case when the signature is invalid', async () => {
-      const { controller, updateTransactionStatusUseCase, webhookSignatureVerifier } = setup();
+      const {
+        controller,
+        updateTransactionStatusUseCase,
+        webhookSignatureVerifier,
+      } = setup();
       webhookSignatureVerifier.verify.mockReturnValue(false);
 
       await expect(controller.handleWebhook(makeWebhookDto())).rejects.toThrow(
@@ -157,7 +182,9 @@ describe('TransactionsController', () => {
     it('acknowledges without calling the use case for event types other than transaction.updated', async () => {
       const { controller, updateTransactionStatusUseCase } = setup();
 
-      const result = await controller.handleWebhook(makeWebhookDto({ event: 'nequi_token.updated' }));
+      const result = await controller.handleWebhook(
+        makeWebhookDto({ event: 'nequi_token.updated' }),
+      );
 
       expect(result).toEqual({ received: true });
       expect(updateTransactionStatusUseCase.execute).not.toHaveBeenCalled();
@@ -174,7 +201,9 @@ describe('TransactionsController', () => {
         ),
       );
 
-      await expect(controller.handleWebhook(makeWebhookDto())).rejects.toBeInstanceOf(ApiException);
+      await expect(
+        controller.handleWebhook(makeWebhookDto()),
+      ).rejects.toBeInstanceOf(ApiException);
     });
   });
 });

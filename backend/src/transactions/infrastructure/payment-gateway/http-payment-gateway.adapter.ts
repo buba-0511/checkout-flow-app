@@ -5,7 +5,10 @@ import {
   CreateGatewayTransactionOutput,
   PaymentGatewayPort,
 } from '../../application/ports/payment-gateway.port';
-import { PAYMENT_GATEWAY_CONFIG, type PaymentGatewayConfig } from './payment-gateway.config';
+import {
+  PAYMENT_GATEWAY_CONFIG,
+  type PaymentGatewayConfig,
+} from './payment-gateway.config';
 
 interface AcceptanceTokenResponse {
   data: {
@@ -65,7 +68,9 @@ export class HttpPaymentGatewayAdapter implements PaymentGatewayPort {
   }
 
   private async fetchAcceptanceToken(): Promise<string> {
-    const response = await fetch(`${this.config.apiUrl}/merchants/${this.config.publicKey}`);
+    const response = await fetch(
+      `${this.config.apiUrl}/merchants/${this.config.publicKey}`,
+    );
 
     if (!response.ok) {
       const body = await response.text();
@@ -79,7 +84,9 @@ export class HttpPaymentGatewayAdapter implements PaymentGatewayPort {
   }
 
   // SHA256(reference + amount_in_cents + currency + integrity_secret).
-  private computeIntegritySignature(input: CreateGatewayTransactionInput): string {
+  private computeIntegritySignature(
+    input: CreateGatewayTransactionInput,
+  ): string {
     const raw = `${input.reference}${input.amountInCents}${input.currency}${this.config.integrityKey}`;
     return createHash('sha256').update(raw).digest('hex');
   }

@@ -116,7 +116,9 @@ describe('TypeOrmCustomerRepository', () => {
   describe('findById with ctx', () => {
     it('reads through the transactional EntityManager when a ctx is passed', async () => {
       const { ormRepo, repository } = setup();
-      const txRepo = { findOneBy: jest.fn().mockResolvedValue(makeOrmEntity('c1')) };
+      const txRepo = {
+        findOneBy: jest.fn().mockResolvedValue(makeOrmEntity('c1')),
+      };
       const manager = {
         getRepository: jest.fn().mockReturnValue(txRepo),
       } as unknown as EntityManager;

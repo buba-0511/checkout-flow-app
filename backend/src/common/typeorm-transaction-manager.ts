@@ -9,7 +9,9 @@ import { TransactionContext, TransactionManager } from './transaction-manager';
 export class TypeOrmTransactionContext implements TransactionContext {
   constructor(public readonly manager: EntityManager) {}
 
-  static managerOf(ctx: TransactionContext | undefined): EntityManager | undefined {
+  static managerOf(
+    ctx: TransactionContext | undefined,
+  ): EntityManager | undefined {
     return ctx instanceof TypeOrmTransactionContext ? ctx.manager : undefined;
   }
 }

@@ -1,6 +1,9 @@
 import { createHash } from 'crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { PAYMENT_GATEWAY_CONFIG, type PaymentGatewayConfig } from './payment-gateway.config';
+import {
+  PAYMENT_GATEWAY_CONFIG,
+  type PaymentGatewayConfig,
+} from './payment-gateway.config';
 
 export interface WebhookEventEnvelope {
   event: string;
@@ -26,7 +29,10 @@ export class WebhookSignatureVerifier {
       .map((path) => this.resolve(event.data, path))
       .join('');
     const raw = `${concatenatedProperties}${event.timestamp}${this.config.eventsKey}`;
-    const expected = createHash('sha256').update(raw).digest('hex').toUpperCase();
+    const expected = createHash('sha256')
+      .update(raw)
+      .digest('hex')
+      .toUpperCase();
     return expected === event.signature.checksum.toUpperCase();
   }
 

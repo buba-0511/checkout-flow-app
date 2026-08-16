@@ -37,15 +37,22 @@ describe('HttpPaymentGatewayAdapter', () => {
     const fetchMock = jest
       .spyOn(global, 'fetch')
       .mockResolvedValueOnce(
-        jsonResponse({ data: { presigned_acceptance: { acceptance_token: 'accept_123' } } }),
+        jsonResponse({
+          data: { presigned_acceptance: { acceptance_token: 'accept_123' } },
+        }),
       )
-      .mockResolvedValueOnce(jsonResponse({ data: { id: 'gw_1', status: 'PENDING' } }));
+      .mockResolvedValueOnce(
+        jsonResponse({ data: { id: 'gw_1', status: 'PENDING' } }),
+      );
 
     const adapter = new HttpPaymentGatewayAdapter(config);
     const output = await adapter.createTransaction(input);
 
     expect(output).toEqual({ gatewayTransactionId: 'gw_1' });
-    expect(fetchMock).toHaveBeenNthCalledWith(1, `${config.apiUrl}/merchants/${config.publicKey}`);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      `${config.apiUrl}/merchants/${config.publicKey}`,
+    );
 
     const expectedSignature = createHash('sha256')
       .update(`ref-15000COP${config.integrityKey}`)
@@ -69,7 +76,9 @@ describe('HttpPaymentGatewayAdapter', () => {
   });
 
   it('throws when the acceptance-token fetch fails', async () => {
-    jest.spyOn(global, 'fetch').mockResolvedValueOnce(jsonResponse({ error: 'nope' }, false, 500));
+    jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce(jsonResponse({ error: 'nope' }, false, 500));
 
     const adapter = new HttpPaymentGatewayAdapter(config);
 
@@ -82,9 +91,13 @@ describe('HttpPaymentGatewayAdapter', () => {
     jest
       .spyOn(global, 'fetch')
       .mockResolvedValueOnce(
-        jsonResponse({ data: { presigned_acceptance: { acceptance_token: 'accept_123' } } }),
+        jsonResponse({
+          data: { presigned_acceptance: { acceptance_token: 'accept_123' } },
+        }),
       )
-      .mockResolvedValueOnce(jsonResponse({ error: { reason: 'INVALID_TOKEN' } }, false, 422));
+      .mockResolvedValueOnce(
+        jsonResponse({ error: { reason: 'INVALID_TOKEN' } }, false, 422),
+      );
 
     const adapter = new HttpPaymentGatewayAdapter(config);
 

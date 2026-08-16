@@ -1,17 +1,29 @@
 import { Result } from '../../../common/result';
 import { DomainError } from '../../../common/errors/domain-error';
 import { ErrorCode } from '../../../common/errors/error-code';
-import type { TransactionContext, TransactionManager } from '../../../common/transaction-manager';
-import { Customer, LegalIdType } from '../../../customers/domain/customer.entity';
+import type {
+  TransactionContext,
+  TransactionManager,
+} from '../../../common/transaction-manager';
+import {
+  Customer,
+  LegalIdType,
+} from '../../../customers/domain/customer.entity';
 import type { FindOrCreateCustomerUseCase } from '../../../customers/application/use-cases/find-or-create-customer.use-case';
 import { Delivery } from '../../../deliveries/domain/delivery.entity';
 import type { CreateDeliveryUseCase } from '../../../deliveries/application/use-cases/create-delivery.use-case';
 import { Product } from '../../../products/domain/product.entity';
 import type { DecreaseStockUseCase } from '../../../products/application/use-cases/decrease-stock.use-case';
-import { TransactionSource, TransactionStatus } from '../../domain/transaction.entity';
+import {
+  TransactionSource,
+  TransactionStatus,
+} from '../../domain/transaction.entity';
 import type { TransactionRepository } from '../../domain/transaction.repository';
 import type { PaymentGatewayPort } from '../ports/payment-gateway.port';
-import { CreateTransactionUseCase, type CreateTransactionInput } from './create-transaction.use-case';
+import {
+  CreateTransactionUseCase,
+  type CreateTransactionInput,
+} from './create-transaction.use-case';
 
 function createMockTransactionManager(): jest.Mocked<TransactionManager> {
   return {
@@ -19,7 +31,7 @@ function createMockTransactionManager(): jest.Mocked<TransactionManager> {
     // tests, since runInTransaction's rollback-bridging logic runs for
     // real here; only the actual Postgres transaction is stubbed out.
     run: jest.fn((work: (ctx: TransactionContext) => Promise<unknown>) =>
-      work({} as TransactionContext),
+      work({}),
     ),
   };
 }
@@ -37,11 +49,15 @@ function createMockPaymentGateway(): jest.Mocked<PaymentGatewayPort> {
 }
 
 function createMockFindOrCreateCustomerUseCase() {
-  return { execute: jest.fn() } as unknown as jest.Mocked<FindOrCreateCustomerUseCase>;
+  return {
+    execute: jest.fn(),
+  } as unknown as jest.Mocked<FindOrCreateCustomerUseCase>;
 }
 
 function createMockCreateDeliveryUseCase() {
-  return { execute: jest.fn() } as unknown as jest.Mocked<CreateDeliveryUseCase>;
+  return {
+    execute: jest.fn(),
+  } as unknown as jest.Mocked<CreateDeliveryUseCase>;
 }
 
 function createMockDecreaseStockUseCase() {
@@ -57,9 +73,22 @@ const customer = new Customer(
   LegalIdType.CC,
 );
 
-const delivery = new Delivery('d1', 'c1', 'Calle 123 #45-67', 'Bogotá', 'Cundinamarca');
+const delivery = new Delivery(
+  'd1',
+  'c1',
+  'Calle 123 #45-67',
+  'Bogotá',
+  'Cundinamarca',
+);
 
-const product = new Product('p1', 'Widget', 'A widget.', 1000, 10, 'http://x/1.jpg');
+const product = new Product(
+  'p1',
+  'Widget',
+  'A widget.',
+  1000,
+  10,
+  'http://x/1.jpg',
+);
 
 const input: CreateTransactionInput = {
   customer: {
@@ -69,7 +98,11 @@ const input: CreateTransactionInput = {
     legalId: '1234567890',
     legalIdType: LegalIdType.CC,
   },
-  delivery: { address: 'Calle 123 #45-67', city: 'Bogotá', region: 'Cundinamarca' },
+  delivery: {
+    address: 'Calle 123 #45-67',
+    city: 'Bogotá',
+    region: 'Cundinamarca',
+  },
   items: [{ productId: 'p1', quantity: 2 }],
   source: TransactionSource.CART,
   paymentMethod: { cardToken: 'tok_test_123', installments: 1 },
@@ -86,7 +119,9 @@ function setup() {
   findOrCreateCustomerUseCase.execute.mockResolvedValue(Result.ok(customer));
   createDeliveryUseCase.execute.mockResolvedValue(Result.ok(delivery));
   decreaseStockUseCase.execute.mockResolvedValue(Result.ok([product]));
-  paymentGateway.createTransaction.mockResolvedValue({ gatewayTransactionId: 'gw_123' });
+  paymentGateway.createTransaction.mockResolvedValue({
+    gatewayTransactionId: 'gw_123',
+  });
 
   const useCase = new CreateTransactionUseCase(
     transactionManager,
@@ -204,9 +239,16 @@ describe('CreateTransactionUseCase', () => {
   });
 
   it('rolls back and returns the error when stock decrement fails, without saving or calling the gateway', async () => {
-    const { useCase, decreaseStockUseCase, paymentGateway, transactionRepository } = setup();
+    const {
+      useCase,
+      decreaseStockUseCase,
+      paymentGateway,
+      transactionRepository,
+    } = setup();
     decreaseStockUseCase.execute.mockResolvedValue(
-      Result.err(new DomainError(ErrorCode.STOCK_INSUFFICIENT, 'not enough stock')),
+      Result.err(
+        new DomainError(ErrorCode.STOCK_INSUFFICIENT, 'not enough stock'),
+      ),
     );
 
     const result = await useCase.execute(input);
@@ -219,7 +261,9 @@ describe('CreateTransactionUseCase', () => {
 
   it('returns PAYMENT_GATEWAY_ERROR when the gateway call fails, without losing the already-committed DB work', async () => {
     const { useCase, paymentGateway, transactionRepository } = setup();
-    paymentGateway.createTransaction.mockRejectedValue(new Error('502 from gateway'));
+    paymentGateway.createTransaction.mockRejectedValue(
+      new Error('502 from gateway'),
+    );
 
     const result = await useCase.execute(input);
 

@@ -1,4 +1,5 @@
 import { DataSource, EntityManager } from 'typeorm';
+import type { TransactionContext } from './transaction-manager';
 import {
   TypeOrmTransactionContext,
   TypeOrmTransactionManager,
@@ -25,16 +26,17 @@ describe('TypeOrmTransactionManager', () => {
   it('runs work inside a DataSource transaction, wrapped in a TypeOrmTransactionContext', async () => {
     const fakeManager = {} as EntityManager;
     const dataSource = {
-      transaction: jest.fn((work: (manager: EntityManager) => Promise<unknown>) =>
-        work(fakeManager),
+      transaction: jest.fn(
+        (work: (manager: EntityManager) => Promise<unknown>) =>
+          work(fakeManager),
       ),
     } as unknown as DataSource;
 
     const transactionManager = new TypeOrmTransactionManager(dataSource);
-    const work = jest.fn(async (ctx) => {
+    const work = jest.fn((ctx: TransactionContext) => {
       expect(ctx).toBeInstanceOf(TypeOrmTransactionContext);
       expect(TypeOrmTransactionContext.managerOf(ctx)).toBe(fakeManager);
-      return 'result';
+      return Promise.resolve('result');
     });
 
     const result = await transactionManager.run(work);

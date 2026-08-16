@@ -2,7 +2,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Result } from '../../../common/result';
 import { DomainError } from '../../../common/errors/domain-error';
 import { ErrorCode } from '../../../common/errors/error-code';
-import { Transaction, TransactionStatus } from '../../domain/transaction.entity';
+import {
+  Transaction,
+  TransactionStatus,
+} from '../../domain/transaction.entity';
 import {
   TRANSACTION_REPOSITORY,
   type TransactionRepository,
