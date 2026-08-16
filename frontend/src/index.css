@@ -1,113 +1,137 @@
 @import "tailwindcss";
 
+/* Kōfe design tokens — becomes utility classes automatically (bg-primary,
+   text-primary, etc). Derived shades use color-mix() instead of hand-picked
+   hex so there's one source of truth per color. */
+@theme {
+  --font-sans: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Literata', Georgia, serif;
+
+  --color-primary: #5d3a1a;
+  --color-primary-hover: color-mix(in srgb, #5d3a1a 88%, black);
+  --color-primary-soft: color-mix(in srgb, #5d3a1a 12%, white);
+
+  --color-secondary: #e2725b;
+  --color-secondary-hover: color-mix(in srgb, #e2725b 88%, black);
+  --color-secondary-soft: color-mix(in srgb, #e2725b 14%, white);
+
+  --color-tertiary: #f5f2ed;
+  --color-tertiary-hover: color-mix(in srgb, #f5f2ed 90%, black);
+
+  --color-neutral: #2a2420;
+  --color-neutral-soft: color-mix(in srgb, #2a2420 8%, white);
+  --color-neutral-muted: color-mix(in srgb, #2a2420 55%, white);
+}
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
   color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
+html,
+body,
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+  height: 100%;
 }
 
 body {
-  margin: 0;
+  @apply bg-tertiary text-neutral antialiased;
+  font-family: var(--font-sans);
 }
 
 h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+h2,
+h3,
+.font-heading {
+  font-family: var(--font-serif);
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--color-neutral);
+    color: var(--color-tertiary);
   }
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
+
+/* Tailwind v4 can't @apply one @layer components class from another, so
+   each variant below repeats the shared layout utilities instead of
+   extending a `.btn`/`.field-input`/`.badge` base — combine classes in
+   JSX (e.g. className="btn-primary") rather than in CSS. */
+@layer components {
+  /* Buttons */
+  .btn-primary,
+  .btn-secondary,
+  .btn-outlined,
+  .btn-inverted {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3
+      text-base font-medium transition-colors focus-visible:outline-2
+      focus-visible:outline-offset-2 focus-visible:outline-primary
+      disabled:cursor-not-allowed disabled:opacity-50;
   }
-}
-p {
-  margin: 0;
-}
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-hover;
+  }
+  .btn-secondary {
+    @apply bg-tertiary-hover text-neutral hover:bg-secondary-soft;
+  }
+  .btn-outlined {
+    @apply border border-neutral-muted bg-white text-neutral hover:bg-neutral-soft;
+  }
+  .btn-inverted {
+    @apply bg-neutral text-tertiary hover:opacity-90;
+  }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
+  /* Form fields */
+  .field-label {
+    @apply mb-1 block text-sm font-medium text-neutral;
+  }
+  .field-input,
+  .search-input {
+    @apply w-full rounded-lg border border-neutral-muted bg-white px-3 py-2.5
+      text-base text-neutral placeholder:text-neutral-muted
+      focus:border-primary focus:outline-2 focus:outline-primary
+      disabled:bg-tertiary-hover disabled:text-neutral-muted;
+  }
+  .field-error {
+    @apply mt-1 text-sm text-red-600;
+  }
+  .search-input {
+    @apply flex items-center gap-2 rounded-full border-transparent bg-tertiary-hover;
+  }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+  /* Surfaces */
+  .card {
+    @apply rounded-xl border border-neutral-muted/30 bg-white p-4 shadow-sm;
+  }
+
+  /* Material "backdrop" pattern (brief reference: m2.material.io/components/backdrop) —
+     scrim + front-layer sheet for the payment summary + confirm button. */
+  .backdrop-scrim {
+    @apply fixed inset-0 z-40 bg-neutral/50 backdrop-blur-[1px];
+  }
+  .backdrop-sheet {
+    @apply fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-2xl
+      bg-tertiary p-5 shadow-xl
+      sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:max-w-md
+      sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl;
+  }
+
+  /* Transaction status badges — semantic colors stay universal, not brand-tied. */
+  .badge-pending,
+  .badge-approved,
+  .badge-declined,
+  .badge-error {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-sm font-medium;
+  }
+  .badge-pending {
+    @apply bg-amber-100 text-amber-800;
+  }
+  .badge-approved {
+    @apply bg-green-100 text-green-800;
+  }
+  .badge-declined {
+    @apply bg-red-100 text-red-800;
+  }
+  .badge-error {
+    @apply bg-neutral-soft text-neutral;
+  }
 }

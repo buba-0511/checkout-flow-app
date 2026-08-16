@@ -1,46 +1,61 @@
 import { DataSource } from 'typeorm';
 import { ProductOrmEntity } from '../product.orm-entity';
 
-// TODO: imageUrl points at the eventual MinIO/S3 path convention, but
-// nothing uploads these images yet — the S3 client module doesn't exist
-// yet. Swap these for real uploaded URLs once that's built.
+// TODO: imageUrl points at Unsplash for now — the S3/MinIO upload module
+// doesn't exist yet. Swap these for real uploaded product photos once that's built.
 const DUMMY_PRODUCTS: Omit<ProductOrmEntity, 'id'>[] = [
   {
-    name: 'Wireless Headphones',
+    name: 'Huila Dark Roast',
     description:
-      'Noise-cancelling over-ear headphones with 30-hour battery life.',
-    priceInCents: 12999,
-    stock: 25,
-    imageUrl: 'http://localhost:9000/product-images/wireless-headphones.jpg',
+      'Full-bodied single-origin from Huila, notes of dark chocolate and toasted nuts. 340g whole bean.',
+    priceInCents: 3490000,
+    stock: 24,
+    imageUrl:
+      'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=800&q=75&auto=format&fit=crop',
   },
   {
-    name: 'Mechanical Keyboard',
-    description: 'Compact 75% mechanical keyboard with hot-swappable switches.',
-    priceInCents: 8999,
-    stock: 15,
-    imageUrl: 'http://localhost:9000/product-images/mechanical-keyboard.jpg',
-  },
-  {
-    name: 'USB-C Hub',
+    name: 'Yirgacheffe Light Roast',
     description:
-      '7-in-1 USB-C hub with HDMI, SD card reader, and 100W passthrough.',
-    priceInCents: 4499,
-    stock: 40,
-    imageUrl: 'http://localhost:9000/product-images/usb-c-hub.jpg',
+      'Ethiopian single-origin, bright acidity with notes of jasmine and citrus. 340g whole bean.',
+    priceInCents: 4290000,
+    stock: 16,
+    imageUrl:
+      'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=75&auto=format&fit=crop',
   },
   {
-    name: 'Portable SSD 1TB',
-    description: 'Rugged 1TB external SSD, USB 3.2 Gen 2, up to 1050MB/s.',
-    priceInCents: 10999,
-    stock: 18,
-    imageUrl: 'http://localhost:9000/product-images/portable-ssd.jpg',
+    name: 'Espresso Blend',
+    description:
+      'House blend built for espresso — balanced, syrupy body with a cocoa finish. 500g whole bean.',
+    priceInCents: 3990000,
+    stock: 30,
+    imageUrl:
+      'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=800&q=75&auto=format&fit=crop',
   },
   {
-    name: 'Webcam 1080p',
-    description: 'Full HD webcam with autofocus and built-in privacy shutter.',
-    priceInCents: 3999,
+    name: 'Cold Brew Concentrate',
+    description: 'Slow-steeped 18 hours, ready to dilute. 1L bottle, serves up to 6.',
+    priceInCents: 2890000,
+    stock: 12,
+    imageUrl:
+      'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=75&auto=format&fit=crop',
+  },
+  {
+    name: 'Decaf Colombia',
+    description:
+      'Swiss Water processed, all the flavor without the caffeine. 340g whole bean.',
+    priceInCents: 3690000,
     stock: 0,
-    imageUrl: 'http://localhost:9000/product-images/webcam.jpg',
+    imageUrl:
+      'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=800&q=75&auto=format&fit=crop',
+  },
+  {
+    name: 'Antigua French Press Grind',
+    description:
+      'Guatemalan beans ground coarse for French press, notes of caramel and spice. 340g.',
+    priceInCents: 3790000,
+    stock: 4,
+    imageUrl:
+      'https://images.unsplash.com/photo-1524350876685-274059332603?w=800&q=75&auto=format&fit=crop',
   },
 ];
 
