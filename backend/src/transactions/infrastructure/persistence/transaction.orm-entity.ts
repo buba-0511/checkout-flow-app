@@ -16,11 +16,8 @@ import {
 } from '../../domain/transaction.entity';
 import { TransactionItemOrmEntity } from './transaction-item.orm-entity';
 
-// TypeORM's view of a transaction. Only this file, transaction-item.orm-
-// entity.ts, and transaction.mapper.ts know this shape exists. Uses
-// PrimaryColumn (not PrimaryGeneratedColumn) — the application layer
-// generates the id (see CreateTransactionUseCase), matching every other
-// *OrmEntity in this codebase.
+// PrimaryColumn, not PrimaryGeneratedColumn — the application layer
+// generates the id, matching every other *OrmEntity here.
 @Entity('transactions')
 export class TransactionOrmEntity {
   @PrimaryColumn('uuid')
@@ -55,9 +52,7 @@ export class TransactionOrmEntity {
   @Column({ type: 'enum', enum: TransactionSource })
   source: TransactionSource;
 
-  // cascade: true lets repo.save(transactionOrmEntity) also insert new
-  // TransactionItemOrmEntity rows in the same call — CreateTransactionUseCase
-  // always builds items fresh, never partially updates them.
+  // cascade: true lets save() also insert new TransactionItemOrmEntity rows.
   @OneToMany(() => TransactionItemOrmEntity, (item) => item.transaction, {
     cascade: true,
   })

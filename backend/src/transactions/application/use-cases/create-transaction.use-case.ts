@@ -29,9 +29,7 @@ import {
 } from '../ports/payment-gateway.port';
 import type { Product } from '../../../products/domain/product.entity';
 
-// TODO: placeholder flat fees — replace with real business rules (e.g.
-// delivery fee by region/distance) once specified. Not part of this pass's
-// scope (domain + orchestration only).
+// TODO: placeholder flat fees — replace with real business rules once specified.
 const BASE_FEE_IN_CENTS = 500;
 const DELIVERY_FEE_IN_CENTS = 1000;
 
@@ -130,10 +128,7 @@ export class CreateTransactionUseCase {
       transaction.assignPaymentGatewayReference(gatewayOutput.gatewayTransactionId);
       await this.transactionRepository.save(transaction);
     } catch (err) {
-      // The DB transaction above already committed — this transaction row
-      // stays PENDING with no gatewayTransactionId. Reconciling a stuck
-      // PENDING transaction (retry, manual review, etc.) is out of scope
-      // for this pass; see [[project-payment-webhook-decision]].
+      // DB work above already committed — this row stays PENDING, no gatewayTransactionId.
       const message = err instanceof Error ? err.message : String(err);
       return Result.err(
         new DomainError(

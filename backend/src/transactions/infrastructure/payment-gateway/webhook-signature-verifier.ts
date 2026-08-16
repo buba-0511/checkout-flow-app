@@ -12,12 +12,8 @@ export interface WebhookEventEnvelope {
   };
 }
 
-// Verifies a webhook event actually came from the payment gateway: the
-// gateway signs each event with SHA256(concat(...signature.properties
-// resolved from data, in order) + timestamp + events_secret) — see
-// docs/colombia/eventos. properties is dynamic per event type (e.g.
-// ["transaction.id", "transaction.status", "transaction.amount_in_cents"]),
-// so it must be read from the payload, never hardcoded.
+// SHA256(concat(signature.properties resolved from data) + timestamp +
+// events_secret) — properties is dynamic per event, never hardcoded.
 @Injectable()
 export class WebhookSignatureVerifier {
   constructor(

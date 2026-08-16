@@ -17,17 +17,8 @@ interface CreateGatewayTransactionResponse {
   data: { id: string; status: string };
 }
 
-// Real adapter for the payment gateway's Sandbox REST API
-// (docs: quick-start / environments-and-keys / payment-sources / payment-
-// methods / events, referenced from the test brief). Card tokenization
-// happens client-side (browser -> gateway, public key) before this is ever
-// called — this adapter only ever sees the resulting token, never raw card
-// data.
-//
-// Two calls per transaction: fetch a fresh acceptance token (required on
-// every transaction, not cached — it's short-lived and tied to a specific
-// merchant/user consent flow), then POST the transaction itself, signed
-// with the integrity key.
+// Real adapter for the payment gateway's Sandbox REST API. Card
+// tokenization happens client-side — this only ever sees the resulting token.
 @Injectable()
 export class HttpPaymentGatewayAdapter implements PaymentGatewayPort {
   constructor(
@@ -87,9 +78,7 @@ export class HttpPaymentGatewayAdapter implements PaymentGatewayPort {
     return payload.data.presigned_acceptance.acceptance_token;
   }
 
-  // SHA256(reference + amount_in_cents + currency + integrity_secret), per
-  // the gateway's integrity-signature spec — validates the transaction
-  // amount/reference weren't tampered with in transit.
+  // SHA256(reference + amount_in_cents + currency + integrity_secret).
   private computeIntegritySignature(input: CreateGatewayTransactionInput): string {
     const raw = `${input.reference}${input.amountInCents}${input.currency}${this.config.integrityKey}`;
     return createHash('sha256').update(raw).digest('hex');

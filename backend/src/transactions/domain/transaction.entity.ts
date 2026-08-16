@@ -6,18 +6,14 @@ export enum TransactionStatus {
   ERROR = 'ERROR',
 }
 
-// Purely informational — see project memory on the checkout scope decision.
-// Never branched on in use-case logic; both entry points produce the exact
-// same items[] shape.
+// Purely informational — never branched on in use-case logic.
 export enum TransactionSource {
   BUY_NOW = 'BUY_NOW',
   CART = 'CART',
 }
 
-// A line within a Transaction — not its own aggregate, no repository of its
-// own. unitPriceInCents is captured at checkout time from the product's
-// real price (never trusted from the client), so it stays correct even if
-// the product's price changes later.
+// unitPriceInCents is captured at checkout time from the product's real
+// price, never trusted from the client.
 export class TransactionItem {
   constructor(
     public readonly id: string,
@@ -47,9 +43,7 @@ export class Transaction {
     private _paymentGatewayTransactionId: string | null,
   ) {}
 
-  // Builds a brand-new PENDING transaction, computing subtotal/total from
-  // items + fees here so that invariant can never drift out of sync with
-  // what's actually in `items` — callers never compute totals themselves.
+  // Computes subtotal/total from items + fees so callers never do it themselves.
   static create(params: {
     id: string;
     reference: string;
@@ -83,9 +77,7 @@ export class Transaction {
     );
   }
 
-  // Rebuilds a Transaction exactly as persisted — used only by
-  // transaction.mapper.ts. Unlike create(), trusts the given status/total
-  // fields as-is instead of recomputing them.
+  // Rebuilds from persistence, trusting the given fields instead of recomputing them.
   static reconstitute(params: {
     id: string;
     reference: string;
@@ -130,9 +122,7 @@ export class Transaction {
     this._paymentGatewayTransactionId = paymentGatewayTransactionId;
   }
 
-  // Only a PENDING transaction can be resolved. Guards against a
-  // duplicate/late webhook delivery flipping an already-resolved
-  // transaction to a different status.
+  // Guards against a duplicate/late webhook flipping an already-resolved transaction.
   resolve(status: TransactionStatus): void {
     if (this._status !== TransactionStatus.PENDING) {
       throw new Error(

@@ -8,10 +8,8 @@ export interface TransactionRepository {
   // reference is what the payment gateway echoes back on its webhook —
   // used to locate the transaction a webhook event is about.
   findByReference(reference: string): Promise<Transaction | null>;
-  // ctx: pass the TransactionContext from TransactionManager.run() to make
-  // this write part of a larger atomic DB transaction (e.g. inside
-  // CreateTransactionUseCase, alongside the customer/delivery/stock
-  // writes). Omit for a standalone write (e.g. the webhook handler).
+  // ctx: pass to join CreateTransactionUseCase's DB transaction. Omit for
+  // a standalone write.
   save(transaction: Transaction, ctx?: TransactionContext): Promise<void>;
 }
 

@@ -9,10 +9,7 @@ import {
 } from 'class-validator';
 import { TransactionStatus } from '../../../domain/transaction.entity';
 
-// The payment gateway's real event envelope shape (docs/colombia/eventos).
-// `transaction.updated` is the only event type this app acts on — others
-// (e.g. token-status events for other payment methods this app doesn't
-// support) are acknowledged and ignored by the controller.
+// The payment gateway's real event envelope shape.
 export class WebhookTransactionDto {
   @ApiProperty()
   @IsString()

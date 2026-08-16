@@ -13,11 +13,8 @@ export interface UpdateTransactionStatusInput {
   status: TransactionStatus;
 }
 
-// Called by the payment gateway's webhook once it resolves a transaction.
-// See [[project-payment-webhook-decision]] — the gateway calls back with
-// reference + final status; this use case looks the transaction up by that
-// reference (not id, since the gateway only ever echoes the reference it
-// was given) and applies the result.
+// Called by the payment gateway's webhook — looks the transaction up by
+// reference, since that's what the gateway echoes back.
 @Injectable()
 export class UpdateTransactionStatusUseCase {
   constructor(
@@ -42,9 +39,7 @@ export class UpdateTransactionStatusUseCase {
       );
     }
 
-    // Already resolved — a duplicate or late webhook delivery. Acknowledge
-    // without changing state rather than erroring, since retrying a
-    // duplicate delivery on our side would never succeed differently.
+    // Already resolved — a duplicate/late webhook delivery, acknowledge as-is.
     if (transaction.status !== TransactionStatus.PENDING) {
       return Result.ok(transaction);
     }
