@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { TransactionItemOrmEntity } from '../../../transactions/infrastructure/persistence/transaction-item.orm-entity';
 
 // TypeORM's view of a product. Only this file and product.mapper.ts know
 // this shape exists — everything else in the app works with the plain
@@ -22,4 +23,7 @@ export class ProductOrmEntity {
 
   @Column({ name: 'image_url' })
   imageUrl: string;
+
+  @OneToMany(() => TransactionItemOrmEntity, (item) => item.product)
+  transactionItems?: TransactionItemOrmEntity[];
 }

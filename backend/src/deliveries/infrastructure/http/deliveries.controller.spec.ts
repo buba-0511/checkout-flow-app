@@ -72,11 +72,16 @@ describe('DeliveriesController', () => {
       const { controller, getDeliveryByIdUseCase } = setup();
       getDeliveryByIdUseCase.execute.mockResolvedValue(
         Result.err(
-          new DomainError(ErrorCode.DELIVERY_NOT_FOUND, 'Delivery "missing" was not found.'),
+          new DomainError(
+            ErrorCode.DELIVERY_NOT_FOUND,
+            'Delivery "missing" was not found.',
+          ),
         ),
       );
 
-      await expect(controller.findOne('missing')).rejects.toBeInstanceOf(ApiException);
+      await expect(controller.findOne('missing')).rejects.toBeInstanceOf(
+        ApiException,
+      );
     });
   });
 });

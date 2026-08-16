@@ -1,6 +1,7 @@
 import { Column, Entity, OneToMany, PrimaryColumn } from 'typeorm';
 import { LegalIdType } from '../../domain/customer.entity';
 import { DeliveryOrmEntity } from '../../../deliveries/infrastructure/persistence/delivery.orm-entity';
+import { TransactionOrmEntity } from '../../../transactions/infrastructure/persistence/transaction.orm-entity';
 
 @Entity('customers')
 export class CustomerOrmEntity {
@@ -23,5 +24,8 @@ export class CustomerOrmEntity {
   legalIdType: LegalIdType;
 
   @OneToMany(() => DeliveryOrmEntity, (delivery) => delivery.customer)
-  deliveries: DeliveryOrmEntity[];
+  deliveries?: DeliveryOrmEntity[];
+
+  @OneToMany(() => TransactionOrmEntity, (transaction) => transaction.customer)
+  transactions?: TransactionOrmEntity[];
 }

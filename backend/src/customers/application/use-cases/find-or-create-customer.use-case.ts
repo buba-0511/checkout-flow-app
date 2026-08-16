@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { Result } from '../../../common/result';
 import { DomainError } from '../../../common/errors/domain-error';
+import { TransactionContext } from '../../../common/transaction-manager';
 import { Customer, LegalIdType } from '../../domain/customer.entity';
 import {
   CUSTOMER_REPOSITORY,
@@ -29,6 +30,7 @@ export class FindOrCreateCustomerUseCase {
 
   async execute(
     input: FindOrCreateCustomerInput,
+    ctx?: TransactionContext,
   ): Promise<Result<Customer, DomainError>> {
     const existing = await this.customerRepository.findByLegalId(input.legalId);
     if (existing) {
@@ -43,7 +45,7 @@ export class FindOrCreateCustomerUseCase {
       input.legalId,
       input.legalIdType,
     );
-    await this.customerRepository.save(customer);
+    await this.customerRepository.save(customer, ctx);
     return Result.ok(customer);
   }
 }

@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { unwrap } from '../../../common/errors/api-exception';
 import { FindOrCreateCustomerUseCase } from '../../application/use-cases/find-or-create-customer.use-case';
@@ -22,7 +29,9 @@ export class CustomersController {
   async findOrCreate(
     @Body() dto: CreateCustomerDto,
   ): Promise<CustomerResponseDto> {
-    const customer = unwrap(await this.findOrCreateCustomerUseCase.execute(dto));
+    const customer = unwrap(
+      await this.findOrCreateCustomerUseCase.execute(dto),
+    );
     return CustomerResponseDto.fromDomain(customer);
   }
 

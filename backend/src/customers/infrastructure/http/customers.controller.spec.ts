@@ -43,7 +43,9 @@ describe('CustomersController', () => {
         '1234567890',
         LegalIdType.CC,
       );
-      findOrCreateCustomerUseCase.execute.mockResolvedValue(Result.ok(customer));
+      findOrCreateCustomerUseCase.execute.mockResolvedValue(
+        Result.ok(customer),
+      );
 
       const result = await controller.findOrCreate(dto);
 
@@ -75,11 +77,16 @@ describe('CustomersController', () => {
       const { controller, getCustomerByIdUseCase } = setup();
       getCustomerByIdUseCase.execute.mockResolvedValue(
         Result.err(
-          new DomainError(ErrorCode.CUSTOMER_NOT_FOUND, 'Customer "missing" was not found.'),
+          new DomainError(
+            ErrorCode.CUSTOMER_NOT_FOUND,
+            'Customer "missing" was not found.',
+          ),
         ),
       );
 
-      await expect(controller.findOne('missing')).rejects.toBeInstanceOf(ApiException);
+      await expect(controller.findOne('missing')).rejects.toBeInstanceOf(
+        ApiException,
+      );
     });
   });
 });

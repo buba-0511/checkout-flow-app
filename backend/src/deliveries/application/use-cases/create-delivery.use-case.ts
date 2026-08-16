@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { Result } from '../../../common/result';
 import { DomainError } from '../../../common/errors/domain-error';
+import { TransactionContext } from '../../../common/transaction-manager';
 import { GetCustomerByIdUseCase } from '../../../customers/application/use-cases/get-customer-by-id.use-case';
 import { Delivery } from '../../domain/delivery.entity';
 import {
@@ -32,9 +33,11 @@ export class CreateDeliveryUseCase {
 
   async execute(
     input: CreateDeliveryInput,
+    ctx?: TransactionContext,
   ): Promise<Result<Delivery, DomainError>> {
     const customerResult = await this.getCustomerByIdUseCase.execute(
       input.customerId,
+      ctx,
     );
     if (customerResult.isErr()) {
       return Result.err(customerResult.error);
@@ -47,7 +50,7 @@ export class CreateDeliveryUseCase {
       input.city,
       input.region,
     );
-    await this.deliveryRepository.save(delivery);
+    await this.deliveryRepository.save(delivery, ctx);
     return Result.ok(delivery);
   }
 }

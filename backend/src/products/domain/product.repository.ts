@@ -1,3 +1,4 @@
+import { TransactionContext } from '../../common/transaction-manager';
 import { Product } from './product.entity';
 
 export interface FindPageParams {
@@ -16,8 +17,11 @@ export interface ProductRepository {
   findPage(params: FindPageParams): Promise<Product[]>;
   findById(id: string): Promise<Product | null>;
   findByIds(ids: string[]): Promise<Product[]>;
-  save(product: Product): Promise<void>;
-  saveMany(products: Product[]): Promise<void>;
+  // ctx: pass the TransactionContext from TransactionManager.run() to make
+  // this write part of a larger atomic DB transaction (e.g. the stock
+  // decrement inside CreateTransactionUseCase). Omit for a standalone write.
+  save(product: Product, ctx?: TransactionContext): Promise<void>;
+  saveMany(products: Product[], ctx?: TransactionContext): Promise<void>;
 }
 
 // DI token — TS interfaces don't exist at runtime, Nest needs something

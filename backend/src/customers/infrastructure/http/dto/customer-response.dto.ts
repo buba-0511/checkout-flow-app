@@ -2,7 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Customer, LegalIdType } from '../../../domain/customer.entity';
 
 export class CustomerResponseDto {
-  @ApiProperty({ example: 'b3f1c2a4-5e6d-4f7a-8b9c-0d1e2f3a4b5c', format: 'uuid' })
+  @ApiProperty({
+    example: 'b3f1c2a4-5e6d-4f7a-8b9c-0d1e2f3a4b5c',
+    format: 'uuid',
+  })
   id: string;
 
   @ApiProperty({ example: 'Jane Doe' })
