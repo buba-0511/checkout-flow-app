@@ -9,6 +9,7 @@ import { ListProductsUseCase } from './application/use-cases/list-products.use-c
 import { GetProductByIdUseCase } from './application/use-cases/get-product-by-id.use-case';
 import { GetStockUseCase } from './application/use-cases/get-stock.use-case';
 import { DecreaseStockUseCase } from './application/use-cases/decrease-stock.use-case';
+import { ValidateStockUseCase } from './application/use-cases/validate-stock.use-case';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ProductOrmEntity])],
@@ -18,10 +19,11 @@ import { DecreaseStockUseCase } from './application/use-cases/decrease-stock.use
     GetProductByIdUseCase,
     GetStockUseCase,
     DecreaseStockUseCase,
+    ValidateStockUseCase,
     { provide: PRODUCT_REPOSITORY, useClass: TypeOrmProductRepository },
   ],
-  // DecreaseStockUseCase will be called by the transactions module once
-  // it exists, when a payment is confirmed.
-  exports: [DecreaseStockUseCase],
+  // Used by the transactions module: ValidateStockUseCase at checkout time
+  // (read-only), DecreaseStockUseCase once a payment is approved.
+  exports: [DecreaseStockUseCase, ValidateStockUseCase],
 })
 export class ProductsModule {}

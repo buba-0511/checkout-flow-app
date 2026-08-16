@@ -1,18 +1,19 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Result } from '../../../common/result';
 import { DomainError } from '../../../common/errors/domain-error';
-import { ErrorCode } from '../../../common/errors/error-code';
 import { TransactionContext } from '../../../common/transaction-manager';
 import { Product } from '../../domain/product.entity';
 import {
   PRODUCT_REPOSITORY,
   type ProductRepository,
 } from '../../domain/product.repository';
+import {
+  validateProductsExist,
+  validateSufficientStock,
+  type StockCheckItem,
+} from '../stock-validation';
 
-export interface DecreaseStockItem {
-  productId: string;
-  quantity: number;
-}
+export type DecreaseStockItem = StockCheckItem;
 
 @Injectable()
 export class DecreaseStockUseCase {
@@ -30,8 +31,8 @@ export class DecreaseStockUseCase {
     const productIds = items.map((item) => item.productId);
     const foundProducts = await this.productRepository.findByIds(productIds);
 
-    const result = this.validateAllExist(items, foundProducts)
-      .andThen((products) => this.validateSufficientStock(items, products))
+    const result = validateProductsExist(items, foundProducts)
+      .andThen((products) => validateSufficientStock(items, products))
       .andThen((products) => this.applyDecrease(items, products));
 
     if (result.isErr()) {
@@ -42,48 +43,6 @@ export class DecreaseStockUseCase {
     await this.productRepository.saveMany(result.value, ctx);
     this.logger.log(`Decremented stock for ${result.value.length} product(s)`);
     return Result.ok(result.value);
-  }
-
-  private validateAllExist(
-    items: DecreaseStockItem[],
-    products: Product[],
-  ): Result<Product[], DomainError> {
-    for (const item of items) {
-      const found = products.find((product) => product.id === item.productId);
-      if (!found) {
-        return Result.err(
-          new DomainError(
-            ErrorCode.PRODUCT_NOT_FOUND,
-            `Product "${item.productId}" was not found.`,
-            { productId: item.productId },
-          ),
-        );
-      }
-    }
-    return Result.ok(products);
-  }
-
-  private validateSufficientStock(
-    items: DecreaseStockItem[],
-    products: Product[],
-  ): Result<Product[], DomainError> {
-    for (const item of items) {
-      const product = products.find((p) => p.id === item.productId)!;
-      if (!product.hasEnoughStock(item.quantity)) {
-        return Result.err(
-          new DomainError(
-            ErrorCode.STOCK_INSUFFICIENT,
-            `Not enough stock for "${product.name}".`,
-            {
-              productId: product.id,
-              requested: item.quantity,
-              available: product.stock,
-            },
-          ),
-        );
-      }
-    }
-    return Result.ok(products);
   }
 
   private applyDecrease(

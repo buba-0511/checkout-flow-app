@@ -15,6 +15,8 @@ import {
 import { HttpPaymentGatewayAdapter } from './infrastructure/payment-gateway/http-payment-gateway.adapter';
 import { WebhookSignatureVerifier } from './infrastructure/payment-gateway/webhook-signature-verifier';
 import { TransactionsController } from './infrastructure/http/transactions.controller';
+import { TransactionsGateway } from './infrastructure/websocket/transactions.gateway';
+import { TRANSACTION_EVENTS_PORT } from './application/ports/transaction-events.port';
 import { CreateTransactionUseCase } from './application/use-cases/create-transaction.use-case';
 import { GetTransactionByIdUseCase } from './application/use-cases/get-transaction-by-id.use-case';
 import { UpdateTransactionStatusUseCase } from './application/use-cases/update-transaction-status.use-case';
@@ -32,6 +34,8 @@ import { UpdateTransactionStatusUseCase } from './application/use-cases/update-t
     GetTransactionByIdUseCase,
     UpdateTransactionStatusUseCase,
     WebhookSignatureVerifier,
+    TransactionsGateway,
+    { provide: TRANSACTION_EVENTS_PORT, useExisting: TransactionsGateway },
     { provide: TRANSACTION_REPOSITORY, useClass: TypeOrmTransactionRepository },
     {
       provide: PAYMENT_GATEWAY_CONFIG,

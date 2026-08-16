@@ -13,7 +13,8 @@ import {
   type FindOrCreateCustomerInput,
 } from '../../../customers/application/use-cases/find-or-create-customer.use-case';
 import { CreateDeliveryUseCase } from '../../../deliveries/application/use-cases/create-delivery.use-case';
-import { DecreaseStockUseCase } from '../../../products/application/use-cases/decrease-stock.use-case';
+import { ValidateStockUseCase } from '../../../products/application/use-cases/validate-stock.use-case';
+import { generateOrderReference } from '../generate-order-reference';
 import {
   Transaction,
   TransactionItem,
@@ -70,7 +71,7 @@ export class CreateTransactionUseCase {
     private readonly paymentGateway: PaymentGatewayPort,
     private readonly findOrCreateCustomerUseCase: FindOrCreateCustomerUseCase,
     private readonly createDeliveryUseCase: CreateDeliveryUseCase,
-    private readonly decreaseStockUseCase: DecreaseStockUseCase,
+    private readonly validateStockUseCase: ValidateStockUseCase,
   ) {}
 
   async execute(
@@ -93,16 +94,15 @@ export class CreateTransactionUseCase {
         if (deliveryResult.isErr()) return Result.err(deliveryResult.error);
         const delivery = deliveryResult.value;
 
-        const stockResult = await this.decreaseStockUseCase.execute(
+        const stockResult = await this.validateStockUseCase.execute(
           input.items,
-          ctx,
         );
         if (stockResult.isErr()) return Result.err(stockResult.error);
         const products = stockResult.value;
 
         const transaction = Transaction.create({
           id: randomUUID(),
-          reference: randomUUID(),
+          reference: generateOrderReference(),
           customerId: customer.id,
           deliveryId: delivery.id,
           source: input.source,
