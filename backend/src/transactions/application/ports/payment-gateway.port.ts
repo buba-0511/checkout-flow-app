@@ -3,18 +3,22 @@ export interface CreateGatewayTransactionInput {
   amountInCents: number;
   currency: string;
   customerEmail: string;
+  // Card token from client-side tokenization (browser -> gateway, public
+  // key) — see CreateTransactionDto.paymentMethod. Raw card data never
+  // reaches this backend.
+  cardToken: string;
+  installments: number;
 }
 
 export interface CreateGatewayTransactionOutput {
   gatewayTransactionId: string;
 }
 
-// The outbound HTTP client to the payment gateway's Sandbox API is out of
-// scope for this pass — this port defines the shape CreateTransactionUseCase
-// depends on, so the real adapter (signed requests using
-// PAYMENT_GATEWAY_PRIVATE_KEY) can be built later without touching
-// orchestration logic. See infrastructure/payment-gateway/stub-payment-
-// gateway.adapter.ts for the placeholder bound in transactions.module.ts.
+// Implemented for real by HttpPaymentGatewayAdapter (signed requests to
+// the payment gateway's Sandbox API) — see also
+// infrastructure/payment-gateway/stub-payment-gateway.adapter.ts, a
+// fake implementation kept around for tests/local dev without sandbox
+// credentials.
 export interface PaymentGatewayPort {
   createTransaction(
     input: CreateGatewayTransactionInput,

@@ -72,6 +72,7 @@ const input: CreateTransactionInput = {
   delivery: { address: 'Calle 123 #45-67', city: 'Bogotá', region: 'Cundinamarca' },
   items: [{ productId: 'p1', quantity: 2 }],
   source: TransactionSource.CART,
+  paymentMethod: { cardToken: 'tok_test_123', installments: 1 },
 };
 
 function setup() {
@@ -131,6 +132,8 @@ describe('CreateTransactionUseCase', () => {
       amountInCents: result.value.totalAmountInCents,
       currency: 'COP',
       customerEmail: 'jane.doe@example.com',
+      cardToken: 'tok_test_123',
+      installments: 1,
     });
     expect(result.value.paymentGatewayTransactionId).toBe('gw_123');
     // Saved twice: once inside the DB transaction (PENDING, no gateway id),
@@ -212,5 +215,19 @@ describe('CreateTransactionUseCase', () => {
     expect(result.error.code).toBe(ErrorCode.STOCK_INSUFFICIENT);
     expect(transactionRepository.save).not.toHaveBeenCalled();
     expect(paymentGateway.createTransaction).not.toHaveBeenCalled();
+  });
+
+  it('returns PAYMENT_GATEWAY_ERROR when the gateway call fails, without losing the already-committed DB work', async () => {
+    const { useCase, paymentGateway, transactionRepository } = setup();
+    paymentGateway.createTransaction.mockRejectedValue(new Error('502 from gateway'));
+
+    const result = await useCase.execute(input);
+
+    expect(result.isErr()).toBe(true);
+    expect(result.error.code).toBe(ErrorCode.PAYMENT_GATEWAY_ERROR);
+    expect(result.error.message).toContain('502 from gateway');
+    // The DB-transaction save (PENDING, no gateway id) already happened —
+    // only the post-commit save (with the gateway id) never runs.
+    expect(transactionRepository.save).toHaveBeenCalledTimes(1);
   });
 });

@@ -8,7 +8,12 @@ import { TransactionOrmEntity } from './infrastructure/persistence/transaction.o
 import { TransactionItemOrmEntity } from './infrastructure/persistence/transaction-item.orm-entity';
 import { TypeOrmTransactionRepository } from './infrastructure/persistence/typeorm-transaction.repository';
 import { PAYMENT_GATEWAY_PORT } from './application/ports/payment-gateway.port';
-import { StubPaymentGatewayAdapter } from './infrastructure/payment-gateway/stub-payment-gateway.adapter';
+import {
+  PAYMENT_GATEWAY_CONFIG,
+  type PaymentGatewayConfig,
+} from './infrastructure/payment-gateway/payment-gateway.config';
+import { HttpPaymentGatewayAdapter } from './infrastructure/payment-gateway/http-payment-gateway.adapter';
+import { WebhookSignatureVerifier } from './infrastructure/payment-gateway/webhook-signature-verifier';
 import { TransactionsController } from './infrastructure/http/transactions.controller';
 import { CreateTransactionUseCase } from './application/use-cases/create-transaction.use-case';
 import { GetTransactionByIdUseCase } from './application/use-cases/get-transaction-by-id.use-case';
@@ -26,10 +31,19 @@ import { UpdateTransactionStatusUseCase } from './application/use-cases/update-t
     CreateTransactionUseCase,
     GetTransactionByIdUseCase,
     UpdateTransactionStatusUseCase,
+    WebhookSignatureVerifier,
     { provide: TRANSACTION_REPOSITORY, useClass: TypeOrmTransactionRepository },
-    // TODO: swap for a real adapter once the payment gateway HTTP client is
-    // built — see payment-gateway.port.ts and stub-payment-gateway.adapter.ts.
-    { provide: PAYMENT_GATEWAY_PORT, useClass: StubPaymentGatewayAdapter },
+    {
+      provide: PAYMENT_GATEWAY_CONFIG,
+      useFactory: (): PaymentGatewayConfig => ({
+        apiUrl: process.env.PAYMENT_GATEWAY_API_URL!,
+        publicKey: process.env.PAYMENT_GATEWAY_PUBLIC_KEY!,
+        privateKey: process.env.PAYMENT_GATEWAY_PRIVATE_KEY!,
+        integrityKey: process.env.PAYMENT_GATEWAY_INTEGRITY_KEY!,
+        eventsKey: process.env.PAYMENT_GATEWAY_EVENTS_KEY!,
+      }),
+    },
+    { provide: PAYMENT_GATEWAY_PORT, useClass: HttpPaymentGatewayAdapter },
   ],
 })
 export class TransactionsModule {}

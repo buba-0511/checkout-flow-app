@@ -1,17 +1,66 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsIn,
+  IsInt,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { TransactionStatus } from '../../../domain/transaction.entity';
 
-// Placeholder shape — not yet the real payment gateway webhook payload
-// format. TODO: align this with the gateway's actual event envelope
-// (event type, signature header, nested data.transaction.*) once the real
-// adapter is built; see [[project-payment-webhook-decision]].
-export class TransactionWebhookEventDto {
+// The payment gateway's real event envelope shape (docs/colombia/eventos).
+// `transaction.updated` is the only event type this app acts on — others
+// (e.g. token-status events for other payment methods this app doesn't
+// support) are acknowledged and ignored by the controller.
+export class WebhookTransactionDto {
+  @ApiProperty()
+  @IsString()
+  id: string;
+
   @ApiProperty()
   @IsString()
   reference: string;
 
   @ApiProperty({ enum: TransactionStatus })
-  @IsEnum(TransactionStatus)
+  @IsIn(Object.values(TransactionStatus))
   status: TransactionStatus;
+}
+
+export class WebhookDataDto {
+  @ApiProperty({ type: WebhookTransactionDto })
+  @ValidateNested()
+  @Type(() => WebhookTransactionDto)
+  transaction: WebhookTransactionDto;
+}
+
+export class WebhookSignatureDto {
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  properties: string[];
+
+  @ApiProperty()
+  @IsString()
+  checksum: string;
+}
+
+export class TransactionWebhookEventDto {
+  @ApiProperty({ example: 'transaction.updated' })
+  @IsString()
+  event: string;
+
+  @ApiProperty({ type: WebhookDataDto })
+  @ValidateNested()
+  @Type(() => WebhookDataDto)
+  data: WebhookDataDto;
+
+  @ApiProperty()
+  @IsInt()
+  timestamp: number;
+
+  @ApiProperty({ type: WebhookSignatureDto })
+  @ValidateNested()
+  @Type(() => WebhookSignatureDto)
+  signature: WebhookSignatureDto;
 }

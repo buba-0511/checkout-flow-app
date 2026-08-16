@@ -5,6 +5,7 @@ import { CreateCustomerDto } from '../../../../customers/infrastructure/http/dto
 import { TransactionSource } from '../../../domain/transaction.entity';
 import { CreateTransactionDeliveryDto } from './create-transaction-delivery.dto';
 import { CreateTransactionItemDto } from './create-transaction-item.dto';
+import { CreateTransactionPaymentMethodDto } from './create-transaction-payment-method.dto';
 
 export class CreateTransactionDto {
   @ApiProperty({ type: CreateCustomerDto })
@@ -27,4 +28,9 @@ export class CreateTransactionDto {
   @ApiProperty({ enum: TransactionSource, example: TransactionSource.CART })
   @IsEnum(TransactionSource)
   source: TransactionSource;
+
+  @ApiProperty({ type: CreateTransactionPaymentMethodDto })
+  @ValidateNested()
+  @Type(() => CreateTransactionPaymentMethodDto)
+  paymentMethod: CreateTransactionPaymentMethodDto;
 }

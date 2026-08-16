@@ -11,8 +11,10 @@ import {
 import { CreateTransactionUseCase } from '../../application/use-cases/create-transaction.use-case';
 import { GetTransactionByIdUseCase } from '../../application/use-cases/get-transaction-by-id.use-case';
 import { UpdateTransactionStatusUseCase } from '../../application/use-cases/update-transaction-status.use-case';
+import { WebhookSignatureVerifier } from '../payment-gateway/webhook-signature-verifier';
 import { TransactionsController } from './transactions.controller';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { TransactionWebhookEventDto } from './dto/transaction-webhook-event.dto';
 import { LegalIdType } from '../../../customers/domain/customer.entity';
 
 function makeTransaction(): Transaction {
@@ -28,6 +30,23 @@ function makeTransaction(): Transaction {
   });
 }
 
+function makeWebhookDto(
+  overrides: Partial<{ event: string; status: TransactionStatus }> = {},
+): TransactionWebhookEventDto {
+  return {
+    event: overrides.event ?? 'transaction.updated',
+    data: {
+      transaction: {
+        id: 'gw_1',
+        reference: 'ref-1',
+        status: overrides.status ?? TransactionStatus.APPROVED,
+      },
+    },
+    timestamp: 1530291411,
+    signature: { properties: ['transaction.id'], checksum: 'abc' },
+  };
+}
+
 describe('TransactionsController', () => {
   function setup() {
     const createTransactionUseCase = {
@@ -39,17 +58,22 @@ describe('TransactionsController', () => {
     const updateTransactionStatusUseCase = {
       execute: jest.fn(),
     } as unknown as jest.Mocked<UpdateTransactionStatusUseCase>;
+    const webhookSignatureVerifier = {
+      verify: jest.fn().mockReturnValue(true),
+    } as unknown as jest.Mocked<WebhookSignatureVerifier>;
 
     const controller = new TransactionsController(
       createTransactionUseCase,
       getTransactionByIdUseCase,
       updateTransactionStatusUseCase,
+      webhookSignatureVerifier,
     );
     return {
       controller,
       createTransactionUseCase,
       getTransactionByIdUseCase,
       updateTransactionStatusUseCase,
+      webhookSignatureVerifier,
     };
   }
 
@@ -64,6 +88,7 @@ describe('TransactionsController', () => {
     delivery: { address: 'Calle 123 #45-67', city: 'Bogotá', region: 'Cundinamarca' },
     items: [{ productId: 'p1', quantity: 1 }],
     source: TransactionSource.CART,
+    paymentMethod: { cardToken: 'tok_test_123', installments: 1 },
   };
 
   describe('create', () => {
@@ -102,17 +127,40 @@ describe('TransactionsController', () => {
   });
 
   describe('handleWebhook', () => {
-    it('applies the status update and returns the mapped transaction', async () => {
-      const { controller, updateTransactionStatusUseCase } = setup();
+    it('verifies the signature, then applies the status update and returns the mapped transaction', async () => {
+      const { controller, updateTransactionStatusUseCase, webhookSignatureVerifier } = setup();
       const transaction = makeTransaction();
       transaction.resolve(TransactionStatus.APPROVED);
       updateTransactionStatusUseCase.execute.mockResolvedValue(Result.ok(transaction));
-      const webhookDto = { reference: 'ref-1', status: TransactionStatus.APPROVED };
+      const webhookDto = makeWebhookDto();
 
       const result = await controller.handleWebhook(webhookDto);
 
-      expect(updateTransactionStatusUseCase.execute).toHaveBeenCalledWith(webhookDto);
-      expect(result.status).toBe(TransactionStatus.APPROVED);
+      expect(webhookSignatureVerifier.verify).toHaveBeenCalledWith(webhookDto);
+      expect(updateTransactionStatusUseCase.execute).toHaveBeenCalledWith({
+        reference: 'ref-1',
+        status: TransactionStatus.APPROVED,
+      });
+      expect((result as { status: TransactionStatus }).status).toBe(TransactionStatus.APPROVED);
+    });
+
+    it('throws Unauthorized and never calls the use case when the signature is invalid', async () => {
+      const { controller, updateTransactionStatusUseCase, webhookSignatureVerifier } = setup();
+      webhookSignatureVerifier.verify.mockReturnValue(false);
+
+      await expect(controller.handleWebhook(makeWebhookDto())).rejects.toThrow(
+        'Invalid webhook signature.',
+      );
+      expect(updateTransactionStatusUseCase.execute).not.toHaveBeenCalled();
+    });
+
+    it('acknowledges without calling the use case for event types other than transaction.updated', async () => {
+      const { controller, updateTransactionStatusUseCase } = setup();
+
+      const result = await controller.handleWebhook(makeWebhookDto({ event: 'nequi_token.updated' }));
+
+      expect(result).toEqual({ received: true });
+      expect(updateTransactionStatusUseCase.execute).not.toHaveBeenCalled();
     });
 
     it('throws an ApiException when no transaction matches the reference', async () => {
@@ -126,9 +174,7 @@ describe('TransactionsController', () => {
         ),
       );
 
-      await expect(
-        controller.handleWebhook({ reference: 'missing', status: TransactionStatus.APPROVED }),
-      ).rejects.toBeInstanceOf(ApiException);
+      await expect(controller.handleWebhook(makeWebhookDto())).rejects.toBeInstanceOf(ApiException);
     });
   });
 });

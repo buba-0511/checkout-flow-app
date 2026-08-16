@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { Result } from '../../../common/result';
 import { DomainError } from '../../../common/errors/domain-error';
+import { ErrorCode } from '../../../common/errors/error-code';
 import {
   TRANSACTION_MANAGER,
   type TransactionManager,
@@ -39,6 +40,13 @@ export interface CreateTransactionItemInput {
   quantity: number;
 }
 
+export interface CreateTransactionPaymentMethodInput {
+  // Card token from client-side tokenization (browser -> gateway, public
+  // key) — raw card data never reaches this backend.
+  cardToken: string;
+  installments: number;
+}
+
 export interface CreateTransactionInput {
   customer: FindOrCreateCustomerInput;
   delivery: {
@@ -48,19 +56,9 @@ export interface CreateTransactionInput {
   };
   items: CreateTransactionItemInput[];
   source: TransactionSource;
+  paymentMethod: CreateTransactionPaymentMethodInput;
 }
 
-// The checkout orchestrator: resolves/creates the customer, creates the
-// delivery, validates+decrements stock, and persists the transaction — all
-// as one atomic DB transaction (see runInTransaction) — then, only once
-// that's committed, sends the transaction to the payment gateway. The
-// gateway call deliberately sits outside the DB transaction: it's a
-// network call to a third party, and holding a DB transaction open across
-// one is a well-known way to pile up lock contention and timeouts.
-//
-// If the gateway call fails after commit, the transaction is left PENDING
-// with no gatewayTransactionId — reconciling that is out of scope for this
-// pass (see [[project-payment-webhook-decision]]).
 @Injectable()
 export class CreateTransactionUseCase {
   constructor(
@@ -120,14 +118,31 @@ export class CreateTransactionUseCase {
     }
 
     const { transaction, customerEmail } = committed.value;
-    const gatewayOutput = await this.paymentGateway.createTransaction({
-      reference: transaction.reference,
-      amountInCents: transaction.totalAmountInCents,
-      currency: 'COP',
-      customerEmail,
-    });
-    transaction.assignPaymentGatewayReference(gatewayOutput.gatewayTransactionId);
-    await this.transactionRepository.save(transaction);
+    try {
+      const gatewayOutput = await this.paymentGateway.createTransaction({
+        reference: transaction.reference,
+        amountInCents: transaction.totalAmountInCents,
+        currency: 'COP',
+        customerEmail,
+        cardToken: input.paymentMethod.cardToken,
+        installments: input.paymentMethod.installments,
+      });
+      transaction.assignPaymentGatewayReference(gatewayOutput.gatewayTransactionId);
+      await this.transactionRepository.save(transaction);
+    } catch (err) {
+      // The DB transaction above already committed — this transaction row
+      // stays PENDING with no gatewayTransactionId. Reconciling a stuck
+      // PENDING transaction (retry, manual review, etc.) is out of scope
+      // for this pass; see [[project-payment-webhook-decision]].
+      const message = err instanceof Error ? err.message : String(err);
+      return Result.err(
+        new DomainError(
+          ErrorCode.PAYMENT_GATEWAY_ERROR,
+          `Payment gateway request failed for transaction "${transaction.id}": ${message}`,
+          { transactionId: transaction.id, reference: transaction.reference },
+        ),
+      );
+    }
 
     return Result.ok(transaction);
   }
