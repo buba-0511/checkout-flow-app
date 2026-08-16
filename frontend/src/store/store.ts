@@ -1,10 +1,14 @@
 import { configureStore } from '@reduxjs/toolkit'
+import checkoutReducer from '../features/checkout/checkoutSlice'
+import { loadPersistedCheckout, persistCheckout } from './persistCheckout'
 
-// Empty until the checkout flow's state shape is designed (cart, card/delivery
-// form, transaction reference — see README's Architecture section). Slices
-// get added here as each piece of the 5-step flow is built.
 export const store = configureStore({
-  reducer: {},
+  reducer: { checkout: checkoutReducer },
+  preloadedState: { checkout: loadPersistedCheckout() },
+})
+
+store.subscribe(() => {
+  persistCheckout(store.getState().checkout)
 })
 
 export type RootState = ReturnType<typeof store.getState>

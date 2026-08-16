@@ -1,25 +1,20 @@
 import axios from 'axios';
-import type { AxiosResponse } from 'axios';
+import type { AxiosRequestConfig, AxiosResponse } from 'axios';
 import type { ApiError, ApiErrorResponse, ApiSuccessResponse } from './types';
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
 })
 
-// Narrower than AxiosResponse on purpose — see ResponseErrorLike below for why.
 type SuccessResponseLike = {
   data: ApiSuccessResponse<unknown>
 }
 
-// Success: unwrap { success: true, data } so callers get the payload directly.
-// Exported (rather than inlined below) so each branch can be unit-tested
-// without going through a real HTTP call.
+// Unwraps { success: true, data } so callers get the payload directly.
 export function onFulfilled(response: SuccessResponseLike) {
   return response.data.data
 }
 
-// Narrower than AxiosError on purpose: this is all onRejected actually reads.
-// Lets tests build plain object literals instead of faking a whole AxiosError.
 type ResponseErrorLike = {
   response?: {
     status?: number
@@ -44,11 +39,26 @@ export function onRejected(error: ResponseErrorLike): Promise<never> {
   return Promise.reject(apiError)
 }
 
-// axios types the fulfilled handler as returning AxiosResponse, but this one
-// deliberately unwraps to the payload instead — that's the whole point of
-// the interceptor. Asserting the exact shape axios expects (rather than
-// `any`) keeps the type hole scoped to this one signature.
 apiClient.interceptors.response.use(
   onFulfilled as unknown as (response: AxiosResponse) => AxiosResponse,
   onRejected,
 )
+
+// Cast needed: the interceptor above resolves each call to T, not AxiosResponse<T>.
+export const api = {
+  get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    return apiClient.get(url, config) as unknown as Promise<T>
+  },
+  post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    return apiClient.post(url, data, config) as unknown as Promise<T>
+  },
+  put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    return apiClient.put(url, data, config) as unknown as Promise<T>
+  },
+  patch<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    return apiClient.patch(url, data, config) as unknown as Promise<T>
+  },
+  delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    return apiClient.delete(url, config) as unknown as Promise<T>
+  },
+}

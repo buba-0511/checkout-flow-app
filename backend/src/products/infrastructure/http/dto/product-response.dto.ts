@@ -14,7 +14,7 @@ export class ProductResponseDto {
   @ApiProperty({ example: 'Noise-cancelling over-ear headphones.' })
   description: string;
 
-  @ApiProperty({ example: 12999, description: 'Price in cents (USD).' })
+  @ApiProperty({ example: 12999, description: 'Price in cents (COP).' })
   priceInCents: number;
 
   @ApiProperty({ example: 42, description: 'Units currently available.' })
