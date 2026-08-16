@@ -8,6 +8,11 @@ on:
   push:
     branches: [prod]
     paths: ['infrastructure/**']
+  # Manual fallback — path-filtered push events don't fire when a branch
+  # is created pointing at a commit that already exists elsewhere (no
+  # file diff for GitHub to evaluate the paths filter against). Run this
+  # from the prod branch in the Actions tab when that happens.
+  workflow_dispatch:
 
 permissions:
   id-token: write
@@ -36,5 +41,5 @@ jobs:
         run: terraform plan
 
       - name: Terraform apply
-        if: github.ref == 'refs/heads/prod' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/prod' && github.event_name != 'pull_request'
         run: terraform apply -auto-approve
