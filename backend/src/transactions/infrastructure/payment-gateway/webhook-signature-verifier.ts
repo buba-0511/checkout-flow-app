@@ -17,6 +17,8 @@ export interface WebhookEventEnvelope {
 
 // SHA256(concat(signature.properties resolved from data) + timestamp +
 // events_secret) — properties is dynamic per event, never hardcoded.
+const MAX_EVENT_AGE_SECONDS = 300;
+
 @Injectable()
 export class WebhookSignatureVerifier {
   constructor(
@@ -25,6 +27,10 @@ export class WebhookSignatureVerifier {
   ) {}
 
   verify(event: WebhookEventEnvelope): boolean {
+    if (!this.isFresh(event.timestamp)) {
+      return false;
+    }
+
     const concatenatedProperties = event.signature.properties
       .map((path) => this.resolve(event.data, path))
       .join('');
@@ -34,6 +40,12 @@ export class WebhookSignatureVerifier {
       .digest('hex')
       .toUpperCase();
     return expected === event.signature.checksum.toUpperCase();
+  }
+
+  // Rejects an old, previously-valid payload replayed later.
+  private isFresh(timestamp: number): boolean {
+    const ageSeconds = Date.now() / 1000 - timestamp;
+    return ageSeconds >= 0 && ageSeconds <= MAX_EVENT_AGE_SECONDS;
   }
 
   private resolve(data: object, dotPath: string): string {

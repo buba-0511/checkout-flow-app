@@ -16,8 +16,8 @@ jobs:
       run:
         working-directory: infrastructure
     steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
 
       - run: terraform init
       - run: terraform validate

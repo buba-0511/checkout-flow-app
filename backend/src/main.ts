@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
@@ -17,6 +18,25 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, { httpsOptions });
 
+  // CSP stays on — only script-src/style-src get 'unsafe-inline' added,
+  // which Swagger UI needs; everything else keeps helmet's strict defaults.
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+          'script-src': ["'self'", "'unsafe-inline'"],
+          'style-src': ["'self'", "'unsafe-inline'"],
+        },
+      },
+    }),
+  );
+  app.enableCors({
+    origin: (process.env.CORS_ORIGIN ?? 'https://localhost:5173')
+      .split(',')
+      .map((origin) => origin.trim()),
+  });
+
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new GlobalExceptionFilter());
@@ -24,7 +44,9 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Checkout Flow API')
     .setDescription(
-      'Stock, transactions, customers, and deliveries for the checkout flow app.',
+      'Stock, transactions, customers, and deliveries for the checkout flow app. ' +
+        'Rate limited to 100 requests/minute per IP by default (429 Too Many Requests once exceeded); ' +
+        'individual endpoints may set a tighter limit — see their own description.',
     )
     .setVersion('0.1')
     .build();

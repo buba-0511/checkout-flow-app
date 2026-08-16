@@ -10,9 +10,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
@@ -23,13 +23,24 @@ jobs:
       - name: Build and push image
         working-directory: backend
         run: |
-          docker build -t ${{ steps.ecr.outputs.registry }}/checkout-backend:${{ github.sha }} .
+          docker build \
+            -t ${{ steps.ecr.outputs.registry }}/checkout-backend:${{ github.sha }} \
+            -t ${{ steps.ecr.outputs.registry }}/checkout-backend:latest \
+            .
           docker push ${{ steps.ecr.outputs.registry }}/checkout-backend:${{ github.sha }}
+          docker push ${{ steps.ecr.outputs.registry }}/checkout-backend:latest
 
-      - name: Trigger App Runner deployment
-        run: aws apprunner start-deployment --service-arn ${{ secrets.APP_RUNNER_SERVICE_ARN }}
+      # ECS/Fargate, not App Runner — see README's "Why ECS/Fargate instead
+      # of App Runner". The task definition tracks the `latest` tag; this
+      # just tells the service to redeploy against whatever that now points to.
+      - name: Force new ECS deployment
+        run: |
+          aws ecs update-service \
+            --cluster ${{ secrets.ECS_CLUSTER }} \
+            --service ${{ secrets.ECS_SERVICE }} \
+            --force-new-deployment
 
       - name: OWASP ZAP baseline scan
-        uses: zaproxy/action-baseline@v0.14.0
+        uses: zaproxy/action-baseline@v0.15.0
         with:
           target: ${{ secrets.BACKEND_URL }}

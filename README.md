@@ -12,6 +12,7 @@ A checkout application where customers browse a product catalog, add items to a 
 - [Architecture](#architecture)
 - [Data model](#data-model)
 - [API documentation](#api-documentation)
+- [Security](#security)
 - [Getting started](#getting-started)
 - [Environment variables](#environment-variables)
 - [Testing](#testing)
@@ -157,6 +158,26 @@ Swagger UI is wired up via `@nestjs/swagger` (`backend/src/main.ts`) and served 
 - Production: `TODO` — add the live `api.checkout.example.com/api/docs` URL once deployed.
 
 Required resources: `stock`, `transactions`, `customers`, `deliveries` — each exposed as its own controller/endpoint group, not flattened into a generic products CRUD. `TODO`: decorate controllers/DTOs with `@ApiTags`/`@ApiProperty` once they're implemented, so the generated spec is actually descriptive.
+
+## Security
+
+Reviewed against the [OWASP Top 10:2025](https://owasp.org/Top10/2025/):
+
+- **A02 Security Misconfiguration** — `helmet` (security headers), explicit CORS allowlist, HTTPS locally via mkcert, generic error messages on 5xx (full detail logged server-side only).
+- **A03 Software Supply Chain Failures** — `npm audit --audit-level=high` in CI, CodeQL static analysis (`.github/workflows/codeql.yml`), lockfile committed.
+- **A04 Cryptographic Failures** — card data is tokenized client-side and never reaches this backend; payment gateway requests and webhook events are signed/verified using the gateway's own SHA-256 scheme.
+- **A05 Injection** — all queries go through TypeORM's parameterized query builder; no raw SQL string concatenation anywhere.
+- **A06 Insecure Design** — Hexagonal Architecture, Railway-Oriented Programming, and checkout writes (customer, delivery, transaction, stock) committed as one atomic DB transaction with automatic rollback on any step's failure.
+- **A08 Software/Data Integrity Failures** — the payment gateway's webhook is signature-verified and rejects stale/replayed events (5-minute freshness window).
+- **A09 Security Logging and Alerting Failures** — every use case logs its notable outcomes (creation, not-found, validation failures) plus dedicated security events (invalid webhook signatures, rate-limit trips); see [Known limitations](#known-limitations) for the alerting gap.
+- **A10 Mishandling of Exceptional Conditions** — a single global exception filter normalizes every error response; Railway-Oriented Programming makes expected failures explicit `Result` values instead of thrown exceptions throughout the domain/application layers.
+
+Also: rate limiting (`@nestjs/throttler`, 100 req/min per IP globally, 10 req/min on `POST /transactions`).
+
+### Known limitations
+
+- **A01 Broken Access Control** — there is no user login in this flow (guest checkout, per the test brief), so `GET /transactions/:id` and `GET /customers/:id` don't verify the caller owns the record — anyone holding the (random, unguessable) UUID can read it. A proportionate fix without adding user accounts would be requiring a second confirmation value (e.g. the customer's email) to match before returning data, similar to airline booking lookups. Not implemented yet.
+- **A09 alerting** — security-relevant log lines exist (see above) but nothing currently pages/notifies anyone when they fire. The logs have nowhere durable to go until the app is deployed; once it is, the plan is a CloudWatch Logs metric filter + alarm (e.g. on repeated invalid-webhook-signature or rate-limit-exceeded lines) wired to an SNS topic. Deferred until deployment (see [Deployment](#deployment)).
 
 ## Getting started
 

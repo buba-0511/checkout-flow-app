@@ -10,6 +10,10 @@ const config: PaymentGatewayConfig = {
   eventsKey: 'events_test',
 };
 
+function now(): number {
+  return Math.floor(Date.now() / 1000);
+}
+
 function computeChecksum(
   concatenatedProperties: string,
   timestamp: number,
@@ -27,7 +31,7 @@ describe('WebhookSignatureVerifier', () => {
     const data = {
       transaction: { id: 'tx_1', status: 'APPROVED', amount_in_cents: 5000 },
     };
-    const timestamp = 1530291411;
+    const timestamp = now();
     const properties = [
       'transaction.id',
       'transaction.status',
@@ -55,7 +59,7 @@ describe('WebhookSignatureVerifier', () => {
     const result = verifier.verify({
       event: 'transaction.updated',
       data: { transaction: { id: 'tx_1' } },
-      timestamp: 1530291411,
+      timestamp: now(),
       signature: {
         properties: ['transaction.id'],
         checksum: 'not-the-real-checksum',
@@ -67,7 +71,7 @@ describe('WebhookSignatureVerifier', () => {
 
   it('compares the checksum case-insensitively', () => {
     const verifier = new WebhookSignatureVerifier(config);
-    const timestamp = 1530291411;
+    const timestamp = now();
     const checksum = computeChecksum('tx_1', timestamp, config.eventsKey);
 
     const result = verifier.verify({
@@ -85,7 +89,7 @@ describe('WebhookSignatureVerifier', () => {
 
   it('resolves a missing nested property as the literal string "undefined"', () => {
     const verifier = new WebhookSignatureVerifier(config);
-    const timestamp = 1530291411;
+    const timestamp = now();
     const checksum = computeChecksum('undefined', timestamp, config.eventsKey);
 
     const result = verifier.verify({
@@ -96,5 +100,35 @@ describe('WebhookSignatureVerifier', () => {
     });
 
     expect(result).toBe(true);
+  });
+
+  it('rejects a stale event even with a correct checksum (replay protection)', () => {
+    const verifier = new WebhookSignatureVerifier(config);
+    const timestamp = now() - 301; // just past the 300s freshness window
+    const checksum = computeChecksum('tx_1', timestamp, config.eventsKey);
+
+    const result = verifier.verify({
+      event: 'transaction.updated',
+      data: { transaction: { id: 'tx_1' } },
+      timestamp,
+      signature: { properties: ['transaction.id'], checksum },
+    });
+
+    expect(result).toBe(false);
+  });
+
+  it('rejects an event timestamped in the future', () => {
+    const verifier = new WebhookSignatureVerifier(config);
+    const timestamp = now() + 301;
+    const checksum = computeChecksum('tx_1', timestamp, config.eventsKey);
+
+    const result = verifier.verify({
+      event: 'transaction.updated',
+      data: { transaction: { id: 'tx_1' } },
+      timestamp,
+      signature: { properties: ['transaction.id'], checksum },
+    });
+
+    expect(result).toBe(false);
   });
 });

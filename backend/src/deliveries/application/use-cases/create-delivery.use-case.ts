@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Result } from '../../../common/result';
 import { DomainError } from '../../../common/errors/domain-error';
 import { TransactionContext } from '../../../common/transaction-manager';
@@ -22,6 +22,8 @@ export interface CreateDeliveryInput {
 // so there is no lookup-by-identity step here.
 @Injectable()
 export class CreateDeliveryUseCase {
+  private readonly logger = new Logger(CreateDeliveryUseCase.name);
+
   constructor(
     @Inject(DELIVERY_REPOSITORY)
     private readonly deliveryRepository: DeliveryRepository,
@@ -51,6 +53,9 @@ export class CreateDeliveryUseCase {
       input.region,
     );
     await this.deliveryRepository.save(delivery, ctx);
+    this.logger.log(
+      `Created delivery "${delivery.id}" for customer "${delivery.customerId}"`,
+    );
     return Result.ok(delivery);
   }
 }

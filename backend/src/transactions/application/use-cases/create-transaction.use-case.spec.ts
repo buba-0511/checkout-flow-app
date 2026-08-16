@@ -269,7 +269,8 @@ describe('CreateTransactionUseCase', () => {
 
     expect(result.isErr()).toBe(true);
     expect(result.error.code).toBe(ErrorCode.PAYMENT_GATEWAY_ERROR);
-    expect(result.error.message).toContain('502 from gateway');
+    // Client-facing message stays generic — no upstream detail leaked.
+    expect(result.error.message).not.toContain('502 from gateway');
     // The DB-transaction save (PENDING, no gateway id) already happened —
     // only the post-commit save (with the gateway id) never runs.
     expect(transactionRepository.save).toHaveBeenCalledTimes(1);

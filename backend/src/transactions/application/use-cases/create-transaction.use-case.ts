@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Result } from '../../../common/result';
 import { DomainError } from '../../../common/errors/domain-error';
 import { ErrorCode } from '../../../common/errors/error-code';
@@ -59,6 +59,8 @@ export interface CreateTransactionInput {
 
 @Injectable()
 export class CreateTransactionUseCase {
+  private readonly logger = new Logger(CreateTransactionUseCase.name);
+
   constructor(
     @Inject(TRANSACTION_MANAGER)
     private readonly transactionManager: TransactionManager,
@@ -132,13 +134,20 @@ export class CreateTransactionUseCase {
         gatewayOutput.gatewayTransactionId,
       );
       await this.transactionRepository.save(transaction);
+      this.logger.log(
+        `Transaction "${transaction.id}" (ref "${transaction.reference}") sent to payment gateway — amount ${transaction.totalAmountInCents} COP`,
+      );
     } catch (err) {
       // DB work above already committed — this row stays PENDING, no gatewayTransactionId.
-      const message = err instanceof Error ? err.message : String(err);
+      // Full detail (may include gateway response internals) stays server-side only.
+      this.logger.error(
+        `Payment gateway request failed for transaction "${transaction.id}"`,
+        err instanceof Error ? err.stack : String(err),
+      );
       return Result.err(
         new DomainError(
           ErrorCode.PAYMENT_GATEWAY_ERROR,
-          `Payment gateway request failed for transaction "${transaction.id}": ${message}`,
+          'The payment gateway could not process this transaction. Please try again.',
           { transactionId: transaction.id, reference: transaction.reference },
         ),
       );

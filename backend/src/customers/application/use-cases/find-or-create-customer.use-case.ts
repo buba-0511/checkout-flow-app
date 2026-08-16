@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Result } from '../../../common/result';
 import { DomainError } from '../../../common/errors/domain-error';
 import { TransactionContext } from '../../../common/transaction-manager';
@@ -23,6 +23,8 @@ export interface FindOrCreateCustomerInput {
 // whatever was just typed, in case of a typo) rather than erroring.
 @Injectable()
 export class FindOrCreateCustomerUseCase {
+  private readonly logger = new Logger(FindOrCreateCustomerUseCase.name);
+
   constructor(
     @Inject(CUSTOMER_REPOSITORY)
     private readonly customerRepository: CustomerRepository,
@@ -34,6 +36,7 @@ export class FindOrCreateCustomerUseCase {
   ): Promise<Result<Customer, DomainError>> {
     const existing = await this.customerRepository.findByLegalId(input.legalId);
     if (existing) {
+      this.logger.log(`Resolved existing customer "${existing.id}"`);
       return Result.ok(existing);
     }
 
@@ -46,6 +49,7 @@ export class FindOrCreateCustomerUseCase {
       input.legalIdType,
     );
     await this.customerRepository.save(customer, ctx);
+    this.logger.log(`Created new customer "${customer.id}"`);
     return Result.ok(customer);
   }
 }

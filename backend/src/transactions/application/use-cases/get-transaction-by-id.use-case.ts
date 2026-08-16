@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Result } from '../../../common/result';
 import { DomainError } from '../../../common/errors/domain-error';
 import { ErrorCode } from '../../../common/errors/error-code';
@@ -10,6 +10,8 @@ import {
 
 @Injectable()
 export class GetTransactionByIdUseCase {
+  private readonly logger = new Logger(GetTransactionByIdUseCase.name);
+
   constructor(
     @Inject(TRANSACTION_REPOSITORY)
     private readonly transactionRepository: TransactionRepository,
@@ -19,6 +21,7 @@ export class GetTransactionByIdUseCase {
     const transaction = await this.transactionRepository.findById(id);
 
     if (!transaction) {
+      this.logger.warn(`Transaction "${id}" was not found`);
       return Result.err(
         new DomainError(
           ErrorCode.TRANSACTION_NOT_FOUND,
