@@ -6,6 +6,10 @@ on:
     branches: [prod]
     paths: ['backend/**']
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

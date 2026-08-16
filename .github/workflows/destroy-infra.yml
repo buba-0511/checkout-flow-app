@@ -1,0 +1,41 @@
+# .github/workflows/destroy-infra.yml
+#
+# Manual-only teardown of everything deploy-infra.yml creates (VPC, RDS,
+# ECS/ALB, CloudFront, S3, Secrets Manager) — never runs on push. Trigger
+# from the Actions tab, on the `prod` branch, and type "destroy" in the
+# confirmation input.
+#
+# Does NOT touch infrastructure/bootstrap/ (the Terraform state
+# bucket/lock table) — that has its own `prevent_destroy` lifecycle guard
+# and is meant to be effectively permanent.
+name: Destroy infra
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "destroy" to confirm — this tears down all AWS infrastructure.'
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform-destroy:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'destroy'
+    defaults:
+      run:
+        working-directory: infrastructure
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - run: terraform init
+      - run: terraform destroy -auto-approve

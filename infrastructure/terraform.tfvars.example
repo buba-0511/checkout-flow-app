@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars — every value below has a working default in
+# variables.tf, so this file can start empty. Listed here for visibility.
+
+# github_repo    = "buba-0511/checkout-flow-app"
+# db_instance_class = "db.t4g.micro"
+# fargate_cpu    = 256
+# fargate_memory = 512
+
+# Set AFTER the first apply, once the app CloudFront domain is known
+# (`terraform output cdn_app_domain_name`) — defaults to the local-dev
+# origin so the backend fails closed, not open, before that. See
+# variables.tf's cors_origin for why this can't be wired automatically.
+# cors_origin = "https://xxxxxxxxxxxxx.cloudfront.net"

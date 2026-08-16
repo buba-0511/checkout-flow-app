@@ -217,11 +217,23 @@ npm run dev
 
 ### Infrastructure
 
+One-time only, before the first `terraform init` below can succeed — creates the S3 bucket + DynamoDB table the main config's remote state lives in:
+
+```bash
+cd infrastructure/bootstrap
+terraform init
+terraform apply
+```
+
+Then, from `infrastructure/`:
+
 ```bash
 cd infrastructure
 terraform init
 terraform plan
 ```
+
+`TODO`: this section needs a full pass once the stack has actually been applied — real output values, the `cors_origin`/Secrets Manager manual post-apply steps, etc.
 
 ## Environment variables
 
