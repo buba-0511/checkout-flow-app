@@ -70,11 +70,8 @@ variable "cors_origin" {
     relationship is circular (compute needs cdn's app-distribution domain
     for CORS; cdn needs compute's ALB DNS for its api-distribution origin),
     so this can't be wired as a cross-module reference without Terraform
-    refusing the graph as a cycle. Defaults to the local-dev origin (fails
-    closed, not open) — after the first apply, set this to the real app
-    CloudFront domain from `terraform output cdn_app_domain_name` and
-    re-apply (fast: only the ECS task definition changes).
+    refusing the graph as a cycle.
   EOT
   type        = string
-  default     = "https://localhost:5173"
+  default     = "https://d1vdwx1cui511h.cloudfront.net"
 }
