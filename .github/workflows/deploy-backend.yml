@@ -5,6 +5,8 @@ on:
   push:
     branches: [prod]
     paths: ['backend/**']
+  # Manual fallback — see deploy-infra.yml's comment on the same trigger.
+  workflow_dispatch:
 
 permissions:
   id-token: write
