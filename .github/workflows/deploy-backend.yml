@@ -11,6 +11,8 @@ on:
 permissions:
   id-token: write
   contents: read
+  # zaproxy/action-baseline files a GitHub issue with the scan results.
+  issues: write
 
 jobs:
   deploy:
