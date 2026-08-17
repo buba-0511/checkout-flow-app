@@ -31,12 +31,13 @@ describe('ProductCard', () => {
 
   it('links the product name and image to its detail page', () => {
     renderCard(<ProductCard product={product} onBuyNow={jest.fn()} onAddToCart={jest.fn()} />)
-
+    
     const links = screen.getAllByRole('link')
-    expect(links).toHaveLength(1)
+    expect(links).toHaveLength(2)
     expect(links[0]).toHaveAttribute('href', '/products/p1')
     expect(links[0]).toContainElement(screen.getByRole('img', { name: product.name }))
-    expect(links[0]).toContainElement(screen.getByText('Colombian Dark Roast'))
+    expect(links[1]).toHaveAttribute('href', '/products/p1')
+    expect(links[1]).toContainElement(screen.getByText('Colombian Dark Roast'))
   })
 
   it('renders the product tags as a single pill on the image', () => {

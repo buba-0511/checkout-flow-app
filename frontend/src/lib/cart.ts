@@ -15,8 +15,8 @@ export interface Fees {
 // Preview only, must match backend/src/transactions/application/use-cases/
 // create-transaction.use-case.ts — the amount actually charged always comes
 // from the created Transaction, never from this client-side estimate.
-const BASE_FEE_IN_CENTS = 500
-const DELIVERY_FEE_IN_CENTS = 1000
+const BASE_FEE_IN_CENTS = 300000
+const DELIVERY_FEE_IN_CENTS = 800000
 
 export function resolveCartLines(cart: CartLine[]): ResolvedCartLine[] {
   return cart.map((line) => ({

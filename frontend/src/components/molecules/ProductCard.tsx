@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Minus, Plus, ShoppingCart, Zap } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Minus, Plus, ShoppingCart, Zap } from 'lucide-react'
 import { Button } from '../atoms/Button'
 import { cn } from '../../lib/cn'
 import { formatCurrency } from '../../lib/formatCurrency'
@@ -16,9 +16,11 @@ const LOW_STOCK_THRESHOLD = 5
 
 export function ProductCard({ product, onBuyNow, onAddToCart }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1)
+  const [imageIndex, setImageIndex] = useState(0)
   const outOfStock = product.stock <= 0
   const lowStock = !outOfStock && product.stock <= LOW_STOCK_THRESHOLD
   const stockLabel = outOfStock ? 'Out of stock' : `${product.stock} left`
+  const hasGallery = product.imageUrls.length > 1
 
   function decrement() {
     setQuantity((q) => Math.max(1, q - 1))
@@ -28,12 +30,24 @@ export function ProductCard({ product, onBuyNow, onAddToCart }: ProductCardProps
     setQuantity((q) => Math.min(product.stock, q + 1))
   }
 
+  function showPrevImage(e: MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    setImageIndex((i) => (i === 0 ? product.imageUrls.length - 1 : i - 1))
+  }
+
+  function showNextImage(e: MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    setImageIndex((i) => (i === product.imageUrls.length - 1 ? 0 : i + 1))
+  }
+
   return (
     <div className="card group flex flex-col gap-3 transition-shadow hover:shadow-md">
-      <Link to={`/products/${product.id}`} className="contents">
-        <div className="relative -mx-4 -mt-4 overflow-hidden rounded-t-xl">
+      <div className="relative -mx-4 -mt-4 overflow-hidden rounded-t-xl">
+        <Link to={`/products/${product.id}`}>
           <img
-            src={product.imageUrls[0]}
+            src={product.imageUrls[imageIndex]}
             alt={product.name}
             className={cn(
               'aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-105',
@@ -41,28 +55,59 @@ export function ProductCard({ product, onBuyNow, onAddToCart }: ProductCardProps
             )}
             loading="lazy"
           />
-          <div className="absolute inset-x-3 top-3 flex items-start gap-2">
-            {product.tags.length > 0 && (
-              <span className="min-w-0 truncate rounded-full border border-neutral-muted/30 bg-white/80 px-3 py-1 text-xs font-medium text-neutral shadow-sm backdrop-blur">
-                {product.tags.join(' · ')}
-              </span>
-            )}
-            {lowStock && (
-              <span className="badge-pending ml-auto shrink-0 shadow-sm">{stockLabel}</span>
-            )}
-          </div>
-          {outOfStock && (
-            <div className="absolute inset-0 grid place-items-center">
-              <span className="rounded-full bg-neutral px-4 py-1.5 text-xs font-semibold tracking-wide text-tertiary uppercase shadow-sm">
-                Out of stock
-              </span>
-            </div>
+        </Link>
+        <div className="absolute inset-x-3 top-3 flex items-start gap-2">
+          {product.tags.length > 0 && (
+            <span className="min-w-0 truncate rounded-full border border-neutral-muted/30 bg-white/80 px-3 py-1 text-xs font-medium text-neutral shadow-sm backdrop-blur">
+              {product.tags.join(' · ')}
+            </span>
+          )}
+          {lowStock && (
+            <span className="badge-pending ml-auto shrink-0 shadow-sm">{stockLabel}</span>
           )}
         </div>
-        <div>
-          <h3 className="font-heading text-base font-semibold hover:underline">{product.name}</h3>
-          <p className="line-clamp-2 text-sm text-neutral-muted">{product.description}</p>
-        </div>
+        {outOfStock && (
+          <div className="absolute inset-0 grid place-items-center">
+            <span className="rounded-full bg-neutral px-4 py-1.5 text-xs font-semibold tracking-wide text-tertiary uppercase shadow-sm">
+              Out of stock
+            </span>
+          </div>
+        )}
+        {hasGallery && (
+          <>
+            <button
+              type="button"
+              aria-label="Previous image"
+              onClick={showPrevImage}
+              className="absolute top-1/2 left-2 grid size-7 -translate-y-1/2 place-items-center rounded-full bg-white/80 text-neutral opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100"
+            >
+              <ChevronLeft className="size-4" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              aria-label="Next image"
+              onClick={showNextImage}
+              className="absolute top-1/2 right-2 grid size-7 -translate-y-1/2 place-items-center rounded-full bg-white/80 text-neutral opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100"
+            >
+              <ChevronRight className="size-4" aria-hidden="true" />
+            </button>
+            <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1">
+              {product.imageUrls.map((_, index) => (
+                <span
+                  key={index}
+                  className={cn(
+                    'size-1.5 rounded-full shadow-sm transition-colors',
+                    index === imageIndex ? 'bg-white' : 'bg-white/50',
+                  )}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+      <Link to={`/products/${product.id}`}>
+        <h3 className="font-heading text-base font-semibold hover:underline">{product.name}</h3>
+        <p className="line-clamp-2 text-sm text-neutral-muted">{product.description}</p>
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-x-2 gap-y-1">
         <div>

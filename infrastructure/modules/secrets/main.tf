@@ -1,11 +1,11 @@
-# Placeholder value on purpose — the real Wompi sandbox keys are set
-# manually via `aws secretsmanager put-secret-value` after apply, same
-# trust model as the gitignored .env locally. `ignore_changes` keeps
+# Placeholder value on purpose — the real payment gateway sandbox keys
+# are set manually via `aws secretsmanager put-secret-value` after apply,
+# same trust model as the gitignored .env locally. `ignore_changes` keeps
 # later `terraform apply` runs from clobbering that manual update.
 
 resource "aws_secretsmanager_secret" "payment_gateway" {
   name        = "${var.project_name}/payment-gateway"
-  description = "Wompi sandbox keys - populated manually after apply, never via Terraform state."
+  description = "Payment gateway sandbox keys - populated manually after apply, never via Terraform state."
 
   tags = var.tags
 }
@@ -13,6 +13,7 @@ resource "aws_secretsmanager_secret" "payment_gateway" {
 resource "aws_secretsmanager_secret_version" "payment_gateway" {
   secret_id = aws_secretsmanager_secret.payment_gateway.id
   secret_string = jsonencode({
+    PAYMENT_GATEWAY_API_URL       = "REPLACE_ME"
     PAYMENT_GATEWAY_PUBLIC_KEY    = "REPLACE_ME"
     PAYMENT_GATEWAY_PRIVATE_KEY   = "REPLACE_ME"
     PAYMENT_GATEWAY_EVENTS_KEY    = "REPLACE_ME"

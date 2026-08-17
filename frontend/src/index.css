@@ -102,10 +102,10 @@ h3,
     @apply fixed inset-0 z-40 bg-neutral/50 backdrop-blur-[1px];
   }
   .backdrop-sheet {
-    @apply fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-2xl
-      bg-tertiary p-5 shadow-xl
+    @apply fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] min-h-[70vh] w-full flex-col
+      overflow-y-auto rounded-t-2xl bg-tertiary p-5 shadow-xl
       sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:max-w-md
-      sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl;
+      sm:min-h-[32rem] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl;
   }
 
   /* Transaction status badges — semantic colors stay universal, not brand-tied. */

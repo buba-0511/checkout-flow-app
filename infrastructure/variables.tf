@@ -75,3 +75,15 @@ variable "cors_origin" {
   type        = string
   default     = "https://d1vdwx1cui511h.cloudfront.net"
 }
+
+variable "product_images_base_url" {
+  description = <<-EOT
+    Browser-facing base URL the seeder prepends to each product's bag
+    image filename. Same cross-module cycle problem as cors_origin (this
+    is served off the app CloudFront distribution's own domain), so it's
+    a plain variable with the known-stable domain hardcoded as the
+    default rather than a cross-module reference.
+  EOT
+  type        = string
+  default     = "https://d1vdwx1cui511h.cloudfront.net/product-images"
+}

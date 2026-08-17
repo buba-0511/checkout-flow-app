@@ -30,9 +30,8 @@ import {
 } from '../ports/payment-gateway.port';
 import type { Product } from '../../../products/domain/product.entity';
 
-// TODO: placeholder flat fees — replace with real business rules once specified.
-const BASE_FEE_IN_CENTS = 500;
-const DELIVERY_FEE_IN_CENTS = 1000;
+const BASE_FEE_IN_CENTS = 300000;
+const DELIVERY_FEE_IN_CENTS = 800000;
 
 export interface CreateTransactionItemInput {
   productId: string;

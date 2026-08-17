@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { IoAdapter } from '@nestjs/platform-socket.io';
+import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
@@ -37,6 +38,16 @@ async function bootstrap() {
     origin: (process.env.CORS_ORIGIN ?? 'https://localhost:5173')
       .split(',')
       .map((origin) => origin.trim()),
+  });
+
+  // helmet doesn't set this on its own — a pure API has no use for any of
+  // these browser features, so deny all of them by default.
+  app.use((_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader(
+      'Permissions-Policy',
+      'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+    );
+    next();
   });
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));

@@ -26,11 +26,12 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "PORT", value = "3000" },
         { name = "NODE_ENV", value = "production" },
         { name = "CORS_ORIGIN", value = var.cors_origin },
-        { name = "PAYMENT_GATEWAY_API_URL", value = "https://api-sandbox.co.uat.wompi.dev/v1" },
+        { name = "PRODUCT_IMAGES_BASE_URL", value = var.product_images_base_url },
       ]
 
       secrets = [
         { name = "DATABASE_URL", valueFrom = var.database_url_secret_arn },
+        { name = "PAYMENT_GATEWAY_API_URL", valueFrom = "${var.payment_gateway_secret_arn}:PAYMENT_GATEWAY_API_URL::" },
         { name = "PAYMENT_GATEWAY_PUBLIC_KEY", valueFrom = "${var.payment_gateway_secret_arn}:PAYMENT_GATEWAY_PUBLIC_KEY::" },
         { name = "PAYMENT_GATEWAY_PRIVATE_KEY", valueFrom = "${var.payment_gateway_secret_arn}:PAYMENT_GATEWAY_PRIVATE_KEY::" },
         { name = "PAYMENT_GATEWAY_EVENTS_KEY", valueFrom = "${var.payment_gateway_secret_arn}:PAYMENT_GATEWAY_EVENTS_KEY::" },
