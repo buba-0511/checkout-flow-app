@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Minus, Plus, Trash2, X } from 'lucide-react'
+import { Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react'
 import { formatCurrency } from '../../lib/formatCurrency'
 import type { Fees, ResolvedCartLine } from '../../lib/cart'
 
@@ -51,7 +51,7 @@ export function OrderSummarySheet({
       />
 
       <div className="backdrop-sheet">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex shrink-0 items-center justify-between">
           <h2 className="font-heading text-xl font-semibold">Your order</h2>
           <button
             type="button"
@@ -64,9 +64,14 @@ export function OrderSummarySheet({
         </div>
 
         {empty ? (
-          <p className="py-10 text-center text-sm text-neutral-muted">Your cart is empty.</p>
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+            <div className="grid size-14 place-items-center rounded-full bg-neutral-soft">
+              <ShoppingBag className="size-6 text-neutral-muted" aria-hidden="true" />
+            </div>
+            <p className="text-sm text-neutral-muted">Your cart is empty.</p>
+          </div>
         ) : (
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-1 flex-col gap-4">
             {lines.map(({ line, lineTotalInCents }) => (
               <li key={line.productId} className="flex gap-3">
                 <img
@@ -119,7 +124,7 @@ export function OrderSummarySheet({
         )}
 
         {!empty && (
-          <div className="mt-4 border-t border-neutral-muted/20 pt-4">
+          <div className="mt-4 shrink-0 border-t border-neutral-muted/20 pt-4">
             <dl className="flex flex-col gap-2 text-sm">
               <Row label="Subtotal" valueInCents={fees.subtotalInCents} />
               <Row label="Base fee" valueInCents={fees.baseFeeInCents} />

@@ -10,6 +10,7 @@ import { GetProductByIdUseCase } from './application/use-cases/get-product-by-id
 import { GetStockUseCase } from './application/use-cases/get-stock.use-case';
 import { DecreaseStockUseCase } from './application/use-cases/decrease-stock.use-case';
 import { ValidateStockUseCase } from './application/use-cases/validate-stock.use-case';
+import { ProductSeederService } from './infrastructure/persistence/seeds/product-seeder.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ProductOrmEntity])],
@@ -20,6 +21,7 @@ import { ValidateStockUseCase } from './application/use-cases/validate-stock.use
     GetStockUseCase,
     DecreaseStockUseCase,
     ValidateStockUseCase,
+    ProductSeederService,
     { provide: PRODUCT_REPOSITORY, useClass: TypeOrmProductRepository },
   ],
   // Used by the transactions module: ValidateStockUseCase at checkout time

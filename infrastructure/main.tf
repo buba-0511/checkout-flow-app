@@ -25,14 +25,15 @@ module "secrets" {
 module "compute" {
   source = "./modules/compute"
 
-  project_name      = var.project_name
-  vpc_id            = module.network.vpc_id
-  public_subnet_ids = module.network.public_subnet_ids
-  ecs_subnet_id     = module.network.ecs_subnet_id
-  fargate_cpu       = var.fargate_cpu
-  fargate_memory    = var.fargate_memory
-  backend_image_tag = var.backend_image_tag
-  cors_origin       = var.cors_origin
+  project_name            = var.project_name
+  vpc_id                  = module.network.vpc_id
+  public_subnet_ids       = module.network.public_subnet_ids
+  ecs_subnet_id           = module.network.ecs_subnet_id
+  fargate_cpu             = var.fargate_cpu
+  fargate_memory          = var.fargate_memory
+  backend_image_tag       = var.backend_image_tag
+  cors_origin             = var.cors_origin
+  product_images_base_url = var.product_images_base_url
 
   database_url_secret_arn    = module.database.database_url_secret_arn
   payment_gateway_secret_arn = module.secrets.payment_gateway_secret_arn
@@ -68,10 +69,13 @@ resource "aws_security_group_rule" "rds_from_ecs" {
 module "cdn" {
   source = "./modules/cdn"
 
-  project_name                   = var.project_name
-  s3_bucket_id                   = module.storage.bucket_id
-  s3_bucket_arn                  = module.storage.bucket_arn
-  s3_bucket_regional_domain_name = module.storage.bucket_regional_domain_name
-  alb_dns_name                   = module.compute.alb_dns_name
-  tags                           = local.common_tags
+  project_name                               = var.project_name
+  s3_bucket_id                               = module.storage.static_site_bucket_id
+  s3_bucket_arn                              = module.storage.static_site_bucket_arn
+  s3_bucket_regional_domain_name             = module.storage.static_site_bucket_regional_domain_name
+  product_images_bucket_id                   = module.storage.product_images_bucket_id
+  product_images_bucket_arn                  = module.storage.product_images_bucket_arn
+  product_images_bucket_regional_domain_name = module.storage.product_images_bucket_regional_domain_name
+  alb_dns_name                               = module.compute.alb_dns_name
+  tags                                       = local.common_tags
 }

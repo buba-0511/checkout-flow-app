@@ -32,6 +32,10 @@ variable "cors_origin" {
   type = string
 }
 
+variable "product_images_base_url" {
+  type = string
+}
+
 variable "database_url_secret_arn" {
   description = "Secrets Manager ARN of the full DATABASE_URL connection string."
   type        = string
