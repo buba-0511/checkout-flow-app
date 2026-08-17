@@ -40,13 +40,17 @@ async function bootstrap() {
       .map((origin) => origin.trim()),
   });
 
-  // helmet doesn't set this on its own — a pure API has no use for any of
-  // these browser features, so deny all of them by default.
+  // helmet doesn't set these on its own. A pure API has no use for any
+  // browser features, so deny all of them; and every response here can
+  // carry transaction/customer data, so none of it should be cached by
+  // an intermediate proxy or the browser.
   app.use((_req: Request, res: Response, next: NextFunction) => {
     res.setHeader(
       'Permissions-Policy',
       'camera=(), microphone=(), geolocation=(), interest-cohort=()',
     );
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Pragma', 'no-cache');
     next();
   });
 
