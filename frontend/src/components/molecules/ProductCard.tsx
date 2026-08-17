@@ -79,7 +79,7 @@ export function ProductCard({ product, onBuyNow, onAddToCart }: ProductCardProps
               type="button"
               aria-label="Previous image"
               onClick={showPrevImage}
-              className="absolute top-1/2 left-2 grid size-7 -translate-y-1/2 place-items-center rounded-full bg-white/80 text-neutral opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100"
+              className="absolute top-1/2 left-2 grid size-8 -translate-y-1/2 place-items-center rounded-full bg-white/80 text-neutral shadow-sm backdrop-blur transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
             >
               <ChevronLeft className="size-4" aria-hidden="true" />
             </button>
@@ -87,7 +87,7 @@ export function ProductCard({ product, onBuyNow, onAddToCart }: ProductCardProps
               type="button"
               aria-label="Next image"
               onClick={showNextImage}
-              className="absolute top-1/2 right-2 grid size-7 -translate-y-1/2 place-items-center rounded-full bg-white/80 text-neutral opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100"
+              className="absolute top-1/2 right-2 grid size-8 -translate-y-1/2 place-items-center rounded-full bg-white/80 text-neutral shadow-sm backdrop-blur transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
             >
               <ChevronRight className="size-4" aria-hidden="true" />
             </button>

@@ -1,4 +1,5 @@
 import { initialState, type CheckoutState } from '../features/checkout/checkoutSlice';
+import { TransactionStatus } from '../api/resources';
 
 const STORAGE_KEY = 'checkout-flow-app:checkout';
 
@@ -9,7 +10,9 @@ export function loadPersistedCheckout(): CheckoutState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return initialState;
     const parsed = JSON.parse(raw) as Partial<CheckoutState>;
-    return { ...initialState, ...parsed, status: 'idle', error: null };
+    const status =
+      parsed.transaction?.status === TransactionStatus.PENDING ? 'awaitingResult' : 'idle';
+    return { ...initialState, ...parsed, status, error: null };
   } catch {
     return initialState;
   }
