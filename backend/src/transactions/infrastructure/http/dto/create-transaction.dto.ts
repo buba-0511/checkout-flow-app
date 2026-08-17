@@ -1,6 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsEnum, ValidateNested } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsEnum,
+  IsOptional,
+  IsUUID,
+  ValidateNested,
+} from 'class-validator';
 import { CreateCustomerDto } from '../../../../customers/infrastructure/http/dto/create-customer.dto';
 import { TransactionSource } from '../../../domain/transaction.entity';
 import { CreateTransactionDeliveryDto } from './create-transaction-delivery.dto';
@@ -33,4 +40,13 @@ export class CreateTransactionDto {
   @ValidateNested()
   @Type(() => CreateTransactionPaymentMethodDto)
   paymentMethod: CreateTransactionPaymentMethodDto;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Client-generated UUID, one per checkout attempt. A resubmission (reload/retry) with the same key returns the original transaction instead of creating a duplicate.',
+  })
+  @IsOptional()
+  @IsUUID()
+  idempotencyKey?: string;
 }

@@ -41,6 +41,10 @@ export class Transaction {
     public readonly deliveryFeeInCents: number,
     public readonly totalAmountInCents: number,
     private _paymentGatewayTransactionId: string | null,
+    // Client-generated, one per checkout attempt — lets CreateTransactionUseCase
+    // return the same transaction instead of creating a duplicate if a
+    // reload/retry resubmits before the first response arrived.
+    public readonly idempotencyKey: string | null,
   ) {}
 
   // Computes subtotal/total from items + fees so callers never do it themselves.
@@ -53,6 +57,7 @@ export class Transaction {
     items: TransactionItem[];
     baseFeeInCents: number;
     deliveryFeeInCents: number;
+    idempotencyKey?: string | null;
   }): Transaction {
     const subtotalInCents = params.items.reduce(
       (sum, item) => sum + item.subtotalInCents,
@@ -74,6 +79,7 @@ export class Transaction {
       params.deliveryFeeInCents,
       totalAmountInCents,
       null,
+      params.idempotencyKey ?? null,
     );
   }
 
@@ -91,6 +97,7 @@ export class Transaction {
     deliveryFeeInCents: number;
     totalAmountInCents: number;
     paymentGatewayTransactionId: string | null;
+    idempotencyKey: string | null;
   }): Transaction {
     return new Transaction(
       params.id,
@@ -105,6 +112,7 @@ export class Transaction {
       params.deliveryFeeInCents,
       params.totalAmountInCents,
       params.paymentGatewayTransactionId,
+      params.idempotencyKey,
     );
   }
 

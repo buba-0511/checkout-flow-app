@@ -31,6 +31,16 @@ export class TypeOrmTransactionRepository implements TransactionRepository {
     return entity ? TransactionMapper.toDomain(entity) : null;
   }
 
+  async findByIdempotencyKey(
+    idempotencyKey: string,
+  ): Promise<Transaction | null> {
+    const entity = await this.repo.findOne({
+      where: { idempotencyKey },
+      relations: { items: true },
+    });
+    return entity ? TransactionMapper.toDomain(entity) : null;
+  }
+
   async save(
     transaction: Transaction,
     ctx?: TransactionContext,

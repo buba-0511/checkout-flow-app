@@ -20,6 +20,7 @@ export class TransactionMapper {
       deliveryFeeInCents: orm.deliveryFeeInCents,
       totalAmountInCents: orm.totalAmountInCents,
       paymentGatewayTransactionId: orm.paymentGatewayTransactionId,
+      idempotencyKey: orm.idempotencyKey,
     });
   }
 
@@ -39,6 +40,7 @@ export class TransactionMapper {
     orm.deliveryFeeInCents = domain.deliveryFeeInCents;
     orm.totalAmountInCents = domain.totalAmountInCents;
     orm.paymentGatewayTransactionId = domain.paymentGatewayTransactionId;
+    orm.idempotencyKey = domain.idempotencyKey;
     return orm;
   }
 

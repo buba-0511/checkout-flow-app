@@ -61,12 +61,14 @@ describe('Transaction.reconstitute', () => {
       deliveryFeeInCents: 700,
       totalAmountInCents: 999999,
       paymentGatewayTransactionId: 'gw_123',
+      idempotencyKey: 'idem-1',
     });
 
     expect(transaction.status).toBe(TransactionStatus.APPROVED);
     expect(transaction.subtotalInCents).toBe(999999);
     expect(transaction.totalAmountInCents).toBe(999999);
     expect(transaction.paymentGatewayTransactionId).toBe('gw_123');
+    expect(transaction.idempotencyKey).toBe('idem-1');
   });
 });
 

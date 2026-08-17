@@ -35,6 +35,7 @@ function makeOrmTransaction(): TransactionOrmEntity {
   orm.deliveryFeeInCents = 700;
   orm.totalAmountInCents = 3000;
   orm.paymentGatewayTransactionId = null;
+  orm.idempotencyKey = 'idem-1';
   return orm;
 }
 
@@ -52,6 +53,7 @@ function makeDomainTransaction(): Transaction {
     deliveryFeeInCents: 700,
     totalAmountInCents: 3000,
     paymentGatewayTransactionId: null,
+    idempotencyKey: 'idem-1',
   });
 }
 
@@ -76,6 +78,7 @@ describe('TransactionMapper', () => {
       expect(domain.deliveryFeeInCents).toBe(700);
       expect(domain.totalAmountInCents).toBe(3000);
       expect(domain.paymentGatewayTransactionId).toBeNull();
+      expect(domain.idempotencyKey).toBe('idem-1');
     });
   });
 
@@ -104,6 +107,7 @@ describe('TransactionMapper', () => {
       expect(orm.deliveryFeeInCents).toBe(700);
       expect(orm.totalAmountInCents).toBe(3000);
       expect(orm.paymentGatewayTransactionId).toBeNull();
+      expect(orm.idempotencyKey).toBe('idem-1');
     });
   });
 });

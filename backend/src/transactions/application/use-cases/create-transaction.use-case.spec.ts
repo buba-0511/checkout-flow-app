@@ -41,6 +41,7 @@ function createMockTransactionRepository(): jest.Mocked<TransactionRepository> {
   return {
     findById: jest.fn(),
     findByReference: jest.fn(),
+    findByIdempotencyKey: jest.fn().mockResolvedValue(null),
     save: jest.fn(),
   };
 }
@@ -284,5 +285,40 @@ describe('CreateTransactionUseCase', () => {
     // The DB-transaction save (PENDING, no gateway id) already happened —
     // only the post-commit save (with the gateway id) never runs.
     expect(transactionRepository.save).toHaveBeenCalledTimes(1);
+  });
+
+  it('stamps a new transaction with the given idempotency key', async () => {
+    const { useCase } = setup();
+
+    const result = await useCase.execute({ ...input, idempotencyKey: 'idem-1' });
+
+    expect(result.value.idempotencyKey).toBe('idem-1');
+  });
+
+  it('returns the existing transaction instead of resubmitting when the idempotency key matches', async () => {
+    const {
+      useCase,
+      transactionRepository,
+      findOrCreateCustomerUseCase,
+      validateStockUseCase,
+      paymentGateway,
+    } = setup();
+    const existing = (
+      await useCase.execute({ ...input, idempotencyKey: 'idem-1' })
+    ).value;
+    findOrCreateCustomerUseCase.execute.mockClear();
+    validateStockUseCase.execute.mockClear();
+    paymentGateway.createTransaction.mockClear();
+    transactionRepository.save.mockClear();
+    transactionRepository.findByIdempotencyKey.mockResolvedValue(existing);
+
+    const result = await useCase.execute({ ...input, idempotencyKey: 'idem-1' });
+
+    expect(result.isOk()).toBe(true);
+    expect(result.value).toBe(existing);
+    expect(findOrCreateCustomerUseCase.execute).not.toHaveBeenCalled();
+    expect(validateStockUseCase.execute).not.toHaveBeenCalled();
+    expect(paymentGateway.createTransaction).not.toHaveBeenCalled();
+    expect(transactionRepository.save).not.toHaveBeenCalled();
   });
 });

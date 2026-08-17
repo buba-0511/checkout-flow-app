@@ -40,6 +40,7 @@ function makeOrmEntity(id: string): TransactionOrmEntity {
   orm.deliveryFeeInCents = 700;
   orm.totalAmountInCents = 3000;
   orm.paymentGatewayTransactionId = null;
+  orm.idempotencyKey = null;
   return orm;
 }
 
@@ -107,6 +108,28 @@ describe('TypeOrmTransactionRepository', () => {
       ormRepo.findOne.mockResolvedValue(null);
 
       expect(await repository.findByReference('missing')).toBeNull();
+    });
+  });
+
+  describe('findByIdempotencyKey', () => {
+    it('returns a mapped Transaction, eagerly loading items', async () => {
+      const { ormRepo, repository } = setup();
+      ormRepo.findOne.mockResolvedValue(makeOrmEntity('t1'));
+
+      const transaction = await repository.findByIdempotencyKey('idem-1');
+
+      expect(ormRepo.findOne).toHaveBeenCalledWith({
+        where: { idempotencyKey: 'idem-1' },
+        relations: { items: true },
+      });
+      expect(transaction?.id).toBe('t1');
+    });
+
+    it('returns null when not found', async () => {
+      const { ormRepo, repository } = setup();
+      ormRepo.findOne.mockResolvedValue(null);
+
+      expect(await repository.findByIdempotencyKey('missing')).toBeNull();
     });
   });
 
