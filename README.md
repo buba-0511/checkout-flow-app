@@ -209,6 +209,7 @@ Reviewed against the [OWASP Top 10:2025](https://owasp.org/Top10/2025/):
 - **A04 Cryptographic Failures**: card data is tokenized client-side and never reaches this backend; payment gateway requests and webhook events are signed/verified using the gateway's own SHA-256 scheme.
 - **A05 Injection**: all queries go through TypeORM's parameterized query builder; no raw SQL string concatenation anywhere.
 - **A06 Insecure Design**: Hexagonal Architecture, Railway-Oriented Programming, and checkout writes (customer, delivery, transaction, stock) committed as one atomic DB transaction with automatic rollback on any step's failure.
+- **A07 Authentication Failures**: not applicable — this is a guest checkout with no login, accounts, or sessions (per the test brief), so there's no authentication mechanism to have failures in.
 - **A08 Software/Data Integrity Failures**: the payment gateway's webhook is signature-verified and rejects stale/replayed events (5-minute freshness window).
 - **A09 Security Logging and Alerting Failures**: every use case logs its notable outcomes (creation, not-found, validation failures) plus dedicated security events (invalid webhook signatures, rate-limit trips). See [Known limitations](#known-limitations) for the alerting gap.
 - **A10 Mishandling of Exceptional Conditions**: a single global exception filter normalizes every error response; Railway-Oriented Programming makes expected failures explicit `Result` values instead of thrown exceptions throughout the domain/application layers.
@@ -217,8 +218,8 @@ Also: rate limiting (`@nestjs/throttler`, 100 req/min per IP globally, 10 req/mi
 
 ### Known limitations
 
-- **A01 Broken Access Control**: there is no user login in this flow (guest checkout, per the test brief), so `GET /transactions/:id` and `GET /customers/:id` don't verify the caller owns the record; anyone holding the (random, unguessable) UUID can read it. A proportionate fix without adding user accounts would be requiring a second confirmation value (e.g. the customer's email) to match before returning data, similar to airline booking lookups. Not implemented yet.
-- **A09 alerting**: security-relevant log lines exist (see above) and now land durably in CloudWatch Logs, since the backend is deployed. What's still missing is anyone getting notified when they fire: the plan is a CloudWatch Logs metric filter and alarm (e.g. on repeated invalid-webhook-signature or rate-limit-exceeded lines) wired to an SNS topic. Not implemented yet.
+- **A01 Broken Access Control**: this is a guest checkout with no user accounts (per the test brief), so `GET /transactions/:id` and `GET /customers/:id` don't verify record ownership. Not implemented — there's no session to check ownership against without adding auth, which is out of scope here.
+- **A09 alerting**: security-relevant events are logged (see above), but nothing pages/notifies when they fire. Not implemented — deprioritized given the test's timeline, and a full SIEM setup is out of scope for a project this size.
 
 ## Getting started
 
