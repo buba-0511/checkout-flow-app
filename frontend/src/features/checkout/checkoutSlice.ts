@@ -42,6 +42,7 @@ export interface CheckoutState {
   transaction: Transaction | null;
   status: 'idle' | 'submitting' | 'awaitingResult' | 'error';
   error: ApiError | null;
+  idempotencyKey: string | null;
 }
 
 export const initialState: CheckoutState = {
@@ -59,6 +60,7 @@ export const initialState: CheckoutState = {
   transaction: null,
   status: 'idle',
   error: null,
+  idempotencyKey: null,
 };
 
 // Shared by the socket push and the catch-up fetch below — a snapshot that's
@@ -112,6 +114,7 @@ export const submitTransaction = createAsyncThunk<
         cardToken: checkout.cardToken,
         installments: checkout.installments,
       },
+      idempotencyKey: checkout.idempotencyKey ?? undefined,
     });
     return transaction;
   } catch (err) {
@@ -217,11 +220,15 @@ const checkoutSlice = createSlice({
       .addCase(submitTransaction.pending, (state) => {
         state.status = 'submitting';
         state.error = null;
+        // Reused on a reload/retry of this same attempt; a fresh one is
+        // generated once this attempt resolves (see fulfilled below).
+        state.idempotencyKey ??= crypto.randomUUID();
       })
       .addCase(submitTransaction.fulfilled, (state, action) => {
         state.transaction = action.payload;
         state.step = 'result';
         state.status = 'awaitingResult';
+        state.idempotencyKey = null;
       })
       .addCase(submitTransaction.rejected, (state, action) => {
         state.status = 'error';

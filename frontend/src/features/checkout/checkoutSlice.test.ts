@@ -189,6 +189,7 @@ describe('submitTransaction thunk', () => {
       items: [{ productId: 'p1', quantity: 1 }],
       source: TransactionSource.BUY_NOW,
       paymentMethod: { cardToken: 'tok_1', installments: 1 },
+      idempotencyKey: expect.any(String),
     })
     expect(store.getState().checkout.step).toBe('result')
     expect(store.getState().checkout.transaction?.id).toBe('t1')

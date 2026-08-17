@@ -96,4 +96,5 @@ export interface CreateTransactionPayload {
     cardToken: string;
     installments: number;
   };
+  idempotencyKey?: string;
 }

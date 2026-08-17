@@ -26,9 +26,69 @@ The app follows a 5-step checkout flow:
 4. **Payment result**: the transaction is created as `PENDING` and sent to the payment gateway. Once the gateway resolves it, it calls the API back with a signed webhook, and the backend pushes the final status to the frontend over a websocket.
 5. **Back to catalog**: redirect to the product catalog with stock already updated.
 
+```mermaid
+sequenceDiagram
+    actor Customer
+    participant Frontend
+    participant Backend
+    participant Gateway
+
+    Customer->>Frontend: Browse catalog
+    Customer->>Frontend: Enter card + delivery
+    Frontend->>Gateway: Tokenize card (public key)
+    Gateway-->>Frontend: Card token
+    Customer->>Frontend: Confirm summary, tap Pay
+    Frontend->>Backend: POST /transactions
+    Backend->>Gateway: Create transaction (private key)
+    Gateway-->>Backend: PENDING + gatewayTransactionId
+    Backend-->>Frontend: Transaction PENDING
+    Frontend->>Customer: "Processing payment"
+    Note over Frontend,Backend: Resolution happens async — see next diagram
+    Frontend->>Customer: Show final result (approved/declined)
+    Customer->>Frontend: Back to catalog
+```
+
 The cart supports multiple products and quantities in a single transaction, not just a single-item checkout. There are two entry points: **buy now** from a product page (one SKU, one or more units), and the **cart** (multiple products, added while continuing to browse). Both produce the same `POST /transactions` request shape (`items: [{ productId, quantity }]`). `TRANSACTION.source` records which entry point was used, for informational purposes only; it never changes backend logic.
 
-**Webhook + polling fallback**: the webhook path is fully implemented and signature-verified (see [Security](#security)), and works end to end locally via a manually-simulated signed POST (the gateway's sandbox can't reach `localhost`). In the deployed environment, the shared sandbox account provided for this test doesn't expose dashboard access to configure the gateway's webhook/events URL, so the webhook never actually gets called there. To keep the flow correct regardless, `GET /transactions/:id` opportunistically reconciles directly with the gateway whenever a transaction is still `PENDING` (`ReconcileTransactionStatusUseCase`), and the frontend polls that endpoint every 3s while waiting. Both paths converge on the same `UpdateTransactionStatusUseCase`, so resolution is identical either way — only the latency differs (instant push vs. up to ~3s).
+**Webhook + polling fallback**: the webhook path is fully implemented and signature-verified (see [Security](#security)), and works end to end locally via a manually-simulated signed POST (the gateway's sandbox can't reach `localhost`). In the deployed environment, the shared sandbox account provided for this test doesn't expose dashboard access to configure the gateway's webhook/events URL, so the webhook never actually gets called there. To keep the flow correct regardless, `GET /transactions/:id` opportunistically reconciles directly with the gateway whenever a transaction is still `PENDING` (`ReconcileTransactionStatusUseCase`), and the frontend polls that endpoint every 3s while waiting. Both paths converge on the same `UpdateTransactionStatusUseCase`, so resolution is identical either way — only the latency differs (instant push vs. up to ~3s). `POST /transactions` also accepts a client-generated `idempotencyKey`, so a reload/retry mid-submit returns the original transaction instead of creating (and charging) a duplicate.
+
+```mermaid
+sequenceDiagram
+    participant Frontend
+    participant Backend
+    participant DB
+    participant Gateway
+
+    Frontend->>Backend: POST /transactions (+ idempotencyKey)
+    alt idempotencyKey already seen
+        Backend->>DB: findByIdempotencyKey
+        DB-->>Backend: existing transaction
+        Backend-->>Frontend: existing transaction (no duplicate created)
+    else new attempt
+        Backend->>DB: create customer + delivery, validate stock
+        Backend->>DB: save transaction (PENDING)
+        Backend->>Gateway: create transaction
+        Gateway-->>Backend: gatewayTransactionId
+        Backend->>DB: save gatewayTransactionId
+        Backend-->>Frontend: transaction PENDING
+    end
+
+    par Webhook path (if configured on the gateway's side)
+        Gateway->>Backend: POST /transactions/webhook (signed)
+        Backend->>Backend: verify signature
+        Backend->>DB: resolve status, decrement stock if approved
+        Backend->>Frontend: push over websocket
+    and Polling path (fallback, always active)
+        loop every 3s while PENDING
+            Frontend->>Backend: GET /transactions/:id
+            Backend->>Gateway: getTransactionStatus
+            Gateway-->>Backend: current status
+            Backend->>DB: resolve if no longer PENDING
+            Backend-->>Frontend: current transaction
+        end
+    end
+    Frontend->>Frontend: show final result
+```
 
 ## Tech stack
 
@@ -165,6 +225,7 @@ erDiagram
         int deliveryFeeInCents
         int totalAmountInCents
         string paymentGatewayTransactionId "nullable until the gateway responds"
+        string idempotencyKey UK "nullable; client-generated, prevents duplicate submits on reload/retry"
     }
 
     TRANSACTION_ITEM {

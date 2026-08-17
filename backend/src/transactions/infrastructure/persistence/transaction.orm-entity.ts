@@ -78,4 +78,12 @@ export class TransactionOrmEntity {
     nullable: true,
   })
   paymentGatewayTransactionId: string | null;
+
+  @Column({
+    name: 'idempotency_key',
+    type: 'varchar',
+    nullable: true,
+    unique: true,
+  })
+  idempotencyKey: string | null;
 }
