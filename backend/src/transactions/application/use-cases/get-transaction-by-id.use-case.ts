@@ -7,6 +7,7 @@ import {
   TRANSACTION_REPOSITORY,
   type TransactionRepository,
 } from '../../domain/transaction.repository';
+import { ReconcileTransactionStatusUseCase } from './reconcile-transaction-status.use-case';
 
 @Injectable()
 export class GetTransactionByIdUseCase {
@@ -15,6 +16,7 @@ export class GetTransactionByIdUseCase {
   constructor(
     @Inject(TRANSACTION_REPOSITORY)
     private readonly transactionRepository: TransactionRepository,
+    private readonly reconcileTransactionStatusUseCase: ReconcileTransactionStatusUseCase,
   ) {}
 
   async execute(id: string): Promise<Result<Transaction, DomainError>> {
@@ -31,6 +33,6 @@ export class GetTransactionByIdUseCase {
       );
     }
 
-    return Result.ok(transaction);
+    return this.reconcileTransactionStatusUseCase.execute(transaction);
   }
 }

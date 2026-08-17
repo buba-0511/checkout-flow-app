@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   CreateGatewayTransactionInput,
   CreateGatewayTransactionOutput,
+  GatewayTransactionStatus,
   PaymentGatewayPort,
 } from '../../application/ports/payment-gateway.port';
 import {
@@ -18,6 +19,10 @@ interface AcceptanceTokenResponse {
 
 interface CreateGatewayTransactionResponse {
   data: { id: string; status: string };
+}
+
+interface GetGatewayTransactionResponse {
+  data: { status: GatewayTransactionStatus['status'] };
 }
 
 // Real adapter for the payment gateway's Sandbox REST API. Card
@@ -65,6 +70,25 @@ export class HttpPaymentGatewayAdapter implements PaymentGatewayPort {
 
     const payload = (await response.json()) as CreateGatewayTransactionResponse;
     return { gatewayTransactionId: payload.data.id };
+  }
+
+  async getTransactionStatus(
+    gatewayTransactionId: string,
+  ): Promise<GatewayTransactionStatus> {
+    const response = await fetch(
+      `${this.config.apiUrl}/transactions/${gatewayTransactionId}`,
+      { headers: { Authorization: `Bearer ${this.config.privateKey}` } },
+    );
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(
+        `Payment gateway status fetch failed (${response.status}): ${body}`,
+      );
+    }
+
+    const payload = (await response.json()) as GetGatewayTransactionResponse;
+    return { status: payload.data.status };
   }
 
   private async fetchAcceptanceToken(): Promise<string> {

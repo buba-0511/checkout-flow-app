@@ -146,4 +146,24 @@ describe('CheckoutResultPage', () => {
 
     await waitFor(() => expect(mockSocket.disconnect).toHaveBeenCalled())
   })
+
+  it('keeps polling GET /transactions/:id as a fallback while awaiting the result', async () => {
+    jest.useFakeTimers({ advanceTimers: true })
+    const pending = { ...baseTransaction, status: TransactionStatus.PENDING }
+    renderWithState({ status: 'awaitingResult', transaction: pending })
+
+    await waitFor(() => expect(transactionsApi.getTransaction).toHaveBeenCalledTimes(1))
+
+    await act(async () => {
+      jest.advanceTimersByTime(3000)
+    })
+    expect(transactionsApi.getTransaction).toHaveBeenCalledTimes(2)
+
+    await act(async () => {
+      jest.advanceTimersByTime(3000)
+    })
+    expect(transactionsApi.getTransaction).toHaveBeenCalledTimes(3)
+
+    jest.useRealTimers()
+  })
 })
