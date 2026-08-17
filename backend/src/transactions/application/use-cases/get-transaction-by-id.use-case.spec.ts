@@ -13,6 +13,7 @@ function createMockRepository(): jest.Mocked<TransactionRepository> {
   return {
     findById: jest.fn(),
     findByReference: jest.fn(),
+    findByIdempotencyKey: jest.fn(),
     save: jest.fn(),
   };
 }

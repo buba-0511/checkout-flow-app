@@ -55,6 +55,7 @@ export interface CreateTransactionInput {
   items: CreateTransactionItemInput[];
   source: TransactionSource;
   paymentMethod: CreateTransactionPaymentMethodInput;
+  idempotencyKey?: string;
 }
 
 @Injectable()
@@ -76,6 +77,20 @@ export class CreateTransactionUseCase {
   async execute(
     input: CreateTransactionInput,
   ): Promise<Result<Transaction, DomainError>> {
+    // A reload/retry resubmitting the same checkout attempt returns the
+    // original transaction instead of creating (and charging) a duplicate.
+    if (input.idempotencyKey) {
+      const existing = await this.transactionRepository.findByIdempotencyKey(
+        input.idempotencyKey,
+      );
+      if (existing) {
+        this.logger.log(
+          `Idempotent replay for transaction "${existing.id}" (ref "${existing.reference}") — returning existing result instead of resubmitting.`,
+        );
+        return Result.ok(existing);
+      }
+    }
+
     const committed = await runInTransaction(
       this.transactionManager,
       async (ctx) => {
@@ -108,6 +123,7 @@ export class CreateTransactionUseCase {
           items: this.buildItems(input.items, products),
           baseFeeInCents: BASE_FEE_IN_CENTS,
           deliveryFeeInCents: DELIVERY_FEE_IN_CENTS,
+          idempotencyKey: input.idempotencyKey,
         });
         await this.transactionRepository.save(transaction, ctx);
 

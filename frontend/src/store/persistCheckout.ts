@@ -29,6 +29,7 @@ export function persistCheckout(state: CheckoutState): void {
     cardToken: state.cardToken,
     installments: state.installments,
     transaction: state.transaction,
+    idempotencyKey: state.idempotencyKey,
   };
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(durable));
