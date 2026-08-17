@@ -70,10 +70,10 @@ function applyTransactionSnapshot(state: CheckoutState, transaction: Transaction
 }
 
 // Webhook resolution is pushed live over the transactions socket (see
-// lib/socket.ts + CheckoutResultPage). This is a one-shot fetch, not a
-// poll — used only as a catch-up read for the case where the socket
-// subscribes after the webhook already resolved the transaction (e.g. the
-// page was refreshed while the payment was still settling).
+// lib/socket.ts + CheckoutResultPage), which also polls this on an
+// interval as a fallback — the backend reconciles with the gateway
+// directly on each read, so this resolves even if the webhook never
+// arrives.
 export const syncTransactionStatus = createAsyncThunk<
   Transaction,
   string,

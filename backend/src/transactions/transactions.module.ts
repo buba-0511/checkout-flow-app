@@ -20,6 +20,7 @@ import { TRANSACTION_EVENTS_PORT } from './application/ports/transaction-events.
 import { CreateTransactionUseCase } from './application/use-cases/create-transaction.use-case';
 import { GetTransactionByIdUseCase } from './application/use-cases/get-transaction-by-id.use-case';
 import { UpdateTransactionStatusUseCase } from './application/use-cases/update-transaction-status.use-case';
+import { ReconcileTransactionStatusUseCase } from './application/use-cases/reconcile-transaction-status.use-case';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { UpdateTransactionStatusUseCase } from './application/use-cases/update-t
     CreateTransactionUseCase,
     GetTransactionByIdUseCase,
     UpdateTransactionStatusUseCase,
+    ReconcileTransactionStatusUseCase,
     WebhookSignatureVerifier,
     TransactionsGateway,
     { provide: TRANSACTION_EVENTS_PORT, useExisting: TransactionsGateway },
