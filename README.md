@@ -28,6 +28,8 @@ The app follows a 5-step checkout flow:
 
 The cart supports multiple products and quantities in a single transaction, not just a single-item checkout. There are two entry points: **buy now** from a product page (one SKU, one or more units), and the **cart** (multiple products, added while continuing to browse). Both produce the same `POST /transactions` request shape (`items: [{ productId, quantity }]`). `TRANSACTION.source` records which entry point was used, for informational purposes only; it never changes backend logic.
 
+**Webhook + polling fallback**: the webhook path is fully implemented and signature-verified (see [Security](#security)), and works end to end locally via a manually-simulated signed POST (the gateway's sandbox can't reach `localhost`). In the deployed environment, the shared sandbox account provided for this test doesn't expose dashboard access to configure the gateway's webhook/events URL, so the webhook never actually gets called there. To keep the flow correct regardless, `GET /transactions/:id` opportunistically reconciles directly with the gateway whenever a transaction is still `PENDING` (`ReconcileTransactionStatusUseCase`), and the frontend polls that endpoint every 3s while waiting. Both paths converge on the same `UpdateTransactionStatusUseCase`, so resolution is identical either way — only the latency differs (instant push vs. up to ~3s).
+
 ## Tech stack
 
 | Layer | Stack |

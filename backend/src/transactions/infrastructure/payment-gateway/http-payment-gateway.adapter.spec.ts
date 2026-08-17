@@ -105,4 +105,31 @@ describe('HttpPaymentGatewayAdapter', () => {
       'transaction creation failed (422)',
     );
   });
+
+  it('fetches the current status of a gateway transaction', async () => {
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce(jsonResponse({ data: { status: 'APPROVED' } }));
+
+    const adapter = new HttpPaymentGatewayAdapter(config);
+    const result = await adapter.getTransactionStatus('gw_1');
+
+    expect(result).toEqual({ status: 'APPROVED' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${config.apiUrl}/transactions/gw_1`,
+      { headers: { Authorization: `Bearer ${config.privateKey}` } },
+    );
+  });
+
+  it('throws when the status fetch fails', async () => {
+    jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce(jsonResponse({ error: 'nope' }, false, 404));
+
+    const adapter = new HttpPaymentGatewayAdapter(config);
+
+    await expect(adapter.getTransactionStatus('gw_1')).rejects.toThrow(
+      'status fetch failed (404)',
+    );
+  });
 });

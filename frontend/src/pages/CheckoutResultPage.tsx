@@ -24,8 +24,11 @@ export function CheckoutResultPage() {
   const resolving = status === 'submitting' || status === 'awaitingResult'
 
   // Subscribes to this transaction's room and waits for the webhook-driven
-  // push. Also does one catch-up fetch in case the update already happened
-  // before the socket connected (e.g. the page was refreshed mid-payment).
+  // push. Also polls GET /transactions/:id every 3s as a fallback — the
+  // backend reconciles directly with the gateway on each read, so this
+  // still resolves even if the gateway's webhook never arrives (e.g. a
+  // misconfigured webhook URL). The interval self-clears once `status`
+  // flips away from 'awaitingResult'.
   useEffect(() => {
     if (status !== 'awaitingResult' || !transactionId) return
 
@@ -36,9 +39,13 @@ export function CheckoutResultPage() {
       dispatch(transactionStatusUpdated(updated))
     })
     void dispatch(syncTransactionStatus(transactionId))
+    const pollId = window.setInterval(() => {
+      void dispatch(syncTransactionStatus(transactionId))
+    }, 3000)
 
     return () => {
       socket.disconnect()
+      window.clearInterval(pollId)
     }
   }, [status, transactionId, dispatch])
 

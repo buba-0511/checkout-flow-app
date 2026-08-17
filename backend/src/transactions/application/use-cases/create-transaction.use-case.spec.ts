@@ -46,7 +46,7 @@ function createMockTransactionRepository(): jest.Mocked<TransactionRepository> {
 }
 
 function createMockPaymentGateway(): jest.Mocked<PaymentGatewayPort> {
-  return { createTransaction: jest.fn() };
+  return { createTransaction: jest.fn(), getTransactionStatus: jest.fn() };
 }
 
 function createMockFindOrCreateCustomerUseCase() {
