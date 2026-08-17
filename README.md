@@ -176,15 +176,7 @@ The api distribution sits in front of the ALB to get free HTTPS at the edge with
 
 The app distribution serves two S3 origins by path: the default path (`/*`) goes to the static site bucket (the Vite build), and `/product-images/*` goes to a separate `product-images` bucket (uploaded manually, key-prefixed to match the path pattern). Both sit behind the same distribution's Origin Access Control, so neither bucket is ever publicly reachable except through CloudFront.
 
-### Why ECS/Fargate instead of App Runner
-
-The infra could have shipped on App Runner, a fully managed alternative that bundles load balancing, TLS termination, and autoscaling without building any of it by hand. This project uses **ECS on Fargate with a self-managed VPC and ALB** instead, deliberately:
-
-- The brief's own suggested AWS services are Lambda, ECS, and EKS; App Runner isn't among them, and demonstrating hands-on VPC/ALB/security-group design is part of what this deploy is meant to show.
-- It's a deliberate trade-off: building the full networking stack by hand (public/private subnets, Internet Gateway, NAT Gateway, ALB, target groups, security groups) that App Runner would have hidden entirely.
-- It costs more to run than App Runner would have. ALB and NAT Gateway have no free tier, roughly $48-50/month combined if left running continuously; that's an accepted cost given the brief only recommends the free tier, it doesn't require it.
-
-If this were optimizing purely for lowest cost and least infrastructure to maintain, App Runner would be the better call.
+ECS on Fargate with a self-managed VPC/ALB was chosen over a fully-managed option like App Runner to demonstrate hands-on networking design (the brief's suggested services are Lambda/ECS/EKS) — a deliberate trade-off, at a real cost of ~$48-50/month for the ALB + NAT Gateway.
 
 ## Data model
 
@@ -320,7 +312,7 @@ npm run dev
 
 ### Infrastructure
 
-One-time only, before the first `terraform init` below can succeed. This creates the S3 bucket and DynamoDB table the main config's remote state lives in:
+One-time only — creates the S3 bucket + DynamoDB table the main config's remote state lives in:
 
 ```bash
 cd infrastructure/bootstrap
@@ -336,12 +328,10 @@ terraform init
 terraform apply
 ```
 
-This is live: it provisions the VPC/ALB/ECS/RDS stack plus both CloudFront distributions (app and product images) on their default `*.cloudfront.net` domains. There's no custom domain, so no Route 53/ACM step. Two manual steps after the first apply:
+This provisions the full stack (VPC, ALB, ECS, RDS, both CloudFront distributions) on their default `*.cloudfront.net` domains — no custom domain needed. Two manual steps after applying:
 
-1. Set GitHub repo secrets so `deploy-backend.yml`/`deploy-frontend.yml` can run. `AWS_DEPLOY_ROLE_ARN`, `ECS_CLUSTER`, `ECS_SERVICE`, `FRONTEND_BUCKET`, `CLOUDFRONT_DISTRIBUTION_ID`, and `BACKEND_URL` come straight from the Terraform outputs; `VITE_API_BASE_URL`, `VITE_PAYMENT_GATEWAY_PUBLIC_KEY`, and `VITE_PAYMENT_GATEWAY_API_URL` are the same values used in the frontend's own `.env` (Vite inlines them at build time, so they can't be read from Secrets Manager at runtime).
-2. Replace the placeholder secret value in Secrets Manager (`checkout-flow/payment-gateway`) with the real payment gateway sandbox keys. Terraform creates it with `lifecycle { ignore_changes = [secret_string] }`, so this survives future applies.
-
-`cors_origin` and `product_images_base_url` are hardcoded Terraform variable defaults (the real CloudFront domains), not `terraform.tfvars` overrides. A `terraform.tfvars` is gitignored and doesn't reach CI, which previously caused a pipeline-driven apply to silently reset `CORS_ORIGIN` back to a `localhost` default and break the deployed frontend.
+1. Set the GitHub repo secrets from the Terraform outputs: `AWS_DEPLOY_ROLE_ARN`, `ECS_CLUSTER`, `ECS_SERVICE`, `FRONTEND_BUCKET`, `CLOUDFRONT_DISTRIBUTION_ID`, `BACKEND_URL`, plus the `VITE_*` build-time values (same as the frontend's own `.env`).
+2. Replace the placeholder secret in Secrets Manager (`checkout-flow/payment-gateway`) with the real payment gateway sandbox keys.
 
 ## Environment variables
 
