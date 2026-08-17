@@ -1,5 +1,5 @@
 import { initialState, type CheckoutState } from '../features/checkout/checkoutSlice'
-import { TransactionSource } from '../api/resources'
+import { TransactionSource, TransactionStatus, type Transaction } from '../api/resources'
 import { loadPersistedCheckout, persistCheckout } from './persistCheckout'
 
 const STORAGE_KEY = 'checkout-flow-app:checkout'
@@ -32,6 +32,51 @@ describe('loadPersistedCheckout', () => {
     expect(result.error).toBeNull()
     // Fields absent from the stored payload still fall back to initialState.
     expect(result.cart).toEqual([])
+  })
+
+  it('resumes awaitingResult when the stored transaction is still PENDING', () => {
+    const transaction: Transaction = {
+      id: 't1',
+      reference: 'ORD-1',
+      customerId: 'c1',
+      deliveryId: 'd1',
+      status: TransactionStatus.PENDING,
+      source: TransactionSource.BUY_NOW,
+      items: [],
+      subtotalInCents: 1000,
+      baseFeeInCents: 300,
+      deliveryFeeInCents: 800,
+      totalAmountInCents: 2100,
+      paymentGatewayTransactionId: 'gw1',
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ step: 'result', transaction }))
+
+    const result = loadPersistedCheckout()
+
+    expect(result.status).toBe('awaitingResult')
+    expect(result.transaction).toEqual(transaction)
+  })
+
+  it('stays idle when the stored transaction is already resolved', () => {
+    const transaction: Transaction = {
+      id: 't1',
+      reference: 'ORD-1',
+      customerId: 'c1',
+      deliveryId: 'd1',
+      status: TransactionStatus.APPROVED,
+      source: TransactionSource.BUY_NOW,
+      items: [],
+      subtotalInCents: 1000,
+      baseFeeInCents: 300,
+      deliveryFeeInCents: 800,
+      totalAmountInCents: 2100,
+      paymentGatewayTransactionId: 'gw1',
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ step: 'result', transaction }))
+
+    const result = loadPersistedCheckout()
+
+    expect(result.status).toBe('idle')
   })
 })
 
