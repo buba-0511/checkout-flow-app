@@ -63,9 +63,9 @@ describe('CheckoutSummaryPage', () => {
     expect(screen.getByText(/Calle 123, Bogotá, Cundinamarca/)).toBeInTheDocument()
     expect(screen.getByText(/VISA/)).toBeInTheDocument()
     expect(screen.getByText(/4242/)).toBeInTheDocument()
-    // line total 6,980,000c = subtotal; + base fee 500c + delivery fee 1000c = total 6,981,500c
+    // line total 6,980,000c = subtotal; + base fee 300,000c + delivery fee 800,000c = total 8,080,000c
     expect(screen.getAllByText('$ 69.800')).toHaveLength(2)
-    expect(screen.getByRole('button', { name: /pay \$\s69\.815/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /pay \$\s80\.800/i })).toBeInTheDocument()
   })
 
   it('dispatches submitTransaction when the pay button is clicked', async () => {

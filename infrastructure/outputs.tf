@@ -19,7 +19,11 @@ output "ecs_service_name" {
 
 # -> FRONTEND_BUCKET
 output "frontend_bucket" {
-  value = module.storage.bucket_id
+  value = module.storage.static_site_bucket_id
+}
+
+output "product_images_bucket" {
+  value = module.storage.product_images_bucket_id
 }
 
 # -> CLOUDFRONT_DISTRIBUTION_ID (frontend cache invalidation)
@@ -43,8 +47,8 @@ output "ecr_repository_url" {
   value = module.compute.ecr_repository_url
 }
 
-# Where to `aws secretsmanager put-secret-value` the real Wompi sandbox
-# keys after apply — see modules/secrets/main.tf's placeholder value.
+# Where to `aws secretsmanager put-secret-value` the real payment gateway
+# sandbox keys after apply — see modules/secrets/main.tf's placeholder value.
 output "payment_gateway_secret_arn" {
   value = module.secrets.payment_gateway_secret_arn
 }

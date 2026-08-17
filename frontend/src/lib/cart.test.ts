@@ -35,9 +35,9 @@ describe('computeFees', () => {
 
     expect(computeFees(lines)).toEqual({
       subtotalInCents: 3000,
-      baseFeeInCents: 500,
-      deliveryFeeInCents: 1000,
-      totalInCents: 4500,
+      baseFeeInCents: 300000,
+      deliveryFeeInCents: 800000,
+      totalInCents: 1103000,
     })
   })
 

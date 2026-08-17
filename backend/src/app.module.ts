@@ -18,7 +18,10 @@ import { TransactionsModule } from './transactions/transactions.module';
       url: process.env.DATABASE_URL,
       autoLoadEntities: true,
       synchronize: true,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      ssl:
+        process.env.NODE_ENV === 'production'
+          ? { rejectUnauthorized: false }
+          : false,
     }),
     // Global default: 100 requests/minute per IP.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
